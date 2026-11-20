@@ -177,25 +177,30 @@ _AA3 = dict(  # three-letter amino-acid code -> one letter
         strict=True,
     )
 )
-_THREE_LETTER = re.compile(r"^(?:p\.)?([A-Za-z]{3})(\d{1,5})([A-Za-z]{3}|\*)?$")
+_ALT = {**_AA3, "del": "del", "dup": "dup"}
+_THREE_LETTER = re.compile(r"^(?:p\.)?([A-Za-z]{3}|[A-Za-z])(\d{1,5})([A-Za-z]{3}|\*)?$")
 
 
-def one_letter(value: str) -> str:
-    """``p.Gly12Cys`` -> ``G12C``; anything else is returned stripped, unchanged."""
+def one_letter(value: str) -> str | None:
+    """``p.Gly12Cys`` / ``G12Cys`` -> ``G12C``; ``None`` if a three-letter code is unknown.
+
+    Anything not shaped like a protein change is returned stripped, unchanged.
+    """
     text = value.strip()
     m = _THREE_LETTER.match(text)
     if not m:
         return text
     ref, pos, alt = m.groups()
-    ref1 = _AA3.get(ref.lower())
-    if ref1 is None or (alt and alt != "*" and alt.lower() not in _AA3):
-        return text
-    return f"{ref1}{pos}{_AA3.get(alt.lower(), '*') if alt else ''}"
+    ref1 = ref.upper() if len(ref) == 1 else _AA3.get(ref.lower())
+    alt1 = alt if alt in (None, "*") else _ALT.get(alt.lower())
+    if ref1 is None or (alt is not None and alt1 is None):
+        return None
+    return f"{ref1}{pos}{alt1 or ''}"
 
 
 def normalize_protein_change(value: str) -> str:
     """``p.G12C`` / ``g12c`` / ``p.Gly12Cys`` -> ``G12C`` (cBioPortal's one-letter form)."""
-    text = one_letter(value)
+    text = one_letter(value) or value.strip()
     if text[:2].lower() == "p.":
         text = text[2:]
     return text.upper()

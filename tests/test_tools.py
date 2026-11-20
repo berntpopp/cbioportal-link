@@ -164,8 +164,9 @@ async def test_three_letter_protein_change_is_accepted(facade: Any, call_tool: A
         },
     )
     assert out["studies"][0]["protein_change"]["value"] == "G12C"
-    hot = await call_tool(facade, "get_mutation_hotspots", {"gene": "TP53", "residue": "Arg175His"})
-    assert hot["is_hotspot"] is True and hot["variant_tumor_count"] == 386
+    for residue in ("Arg175His", "R175His"):  # mixed notation is converted too
+        hot = await call_tool(facade, "get_mutation_hotspots", {"gene": "TP53", "residue": residue})
+        assert hot["is_hotspot"] is True and hot["variant_tumor_count"] == 386
 
 
 async def test_unknown_gene_hint_says_the_resolver_lives_on_the_router(facade: Any) -> None:
@@ -175,7 +176,7 @@ async def test_unknown_gene_hint_says_the_resolver_lives_on_the_router(facade: A
 
 
 async def test_unknown_three_letter_code_is_an_error_not_zero(facade: Any) -> None:
-    for change in ("Xyz12Cys", "Gly12Xyz"):
+    for change in ("Xyz12Cys", "Gly12Xyz", "G12Xyz"):
         res = await _raw(
             facade,
             "get_gene_alteration_frequency",
@@ -188,3 +189,5 @@ async def test_unknown_three_letter_code_is_an_error_not_zero(facade: Any) -> No
         body = res.structured_content
         assert res.is_error is True and body["field"] == "protein_change"
         assert '"G12C"' in body["message"]
+    hot = await _raw(facade, "get_mutation_hotspots", {"gene": "EGFR", "residue": "L858Xyz"})
+    assert hot.is_error is True and hot.structured_content["field"] == "residue"

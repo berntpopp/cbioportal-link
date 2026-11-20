@@ -50,9 +50,17 @@ OptCancerType = Annotated[
 ]
 
 
+def _known_codes(value: str) -> str:
+    """Convert three-letter amino-acid codes; reject an unknown one (never a silent zero)."""
+    out = one_letter(value)
+    if out is None:
+        raise ValueError("use one-letter (G12C) or three-letter (p.Gly12Cys) amino-acid codes")
+    return out
+
+
 def _one_letter_change(value: str) -> str:
     """Convert a three-letter change; reject anything not in one-letter form afterwards."""
-    out = one_letter(value)
+    out = _known_codes(value)
     if not re.fullmatch(r"(?:[pP]\.)?[A-Za-z*]\d{1,5}[A-Za-z0-9_*>]{0,30}", out):
         raise ValueError("use one-letter (G12C) or three-letter (p.Gly12Cys) amino-acid codes")
     return out
@@ -402,7 +410,7 @@ def register_cbio_tools(mcp: FastMCP) -> None:
     async def get_mutation_hotspots(
         gene: Gene,
         residue: Annotated[
-            str | None,
+            Annotated[str, AfterValidator(_known_codes)] | None,
             Field(min_length=1, max_length=40, description="Residue or change: V600 or V600E."),
         ] = None,
         assembly: Annotated[
@@ -422,7 +430,7 @@ def register_cbio_tools(mcp: FastMCP) -> None:
             "get_mutation_hotspots",
             args,
             lambda: get_cbio_service().get_mutation_hotspots(
-                gene, residue and one_letter(residue), assembly, response_mode
+                gene, residue, assembly, response_mode
             ),
             lambda p: [cmd("get_gene_alteration_frequency", gene=p["gene"])],
         )
