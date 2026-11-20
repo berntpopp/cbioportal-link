@@ -373,8 +373,9 @@ def register_cbio_tools(mcp: FastMCP) -> None:
             "Get Cancer Hotspots calls for a gene (bundled v2 + 3D snapshot, ODbL 1.0): "
             "residue, type (single_residue, in_frame_indel, splice_site, 3d), tumor_count, "
             "q_value (3d: p_value, clusters), variants and tumor_types per residue. With "
-            "residue (V600, V600E, R175H) it answers is_hotspot and, for a change, "
-            "variant_tumor_count. Residues follow the assembly's transcript (default GRCh38). "
+            "residue (V600, V600E, R175H) it answers residue_is_hotspot and is_hotspot (for "
+            "a change: seen at a hotspot residue, variant_tumor_count > 0); not a hotspot "
+            "does not mean benign. Residues follow the assembly's transcript (default GRCh38). "
             "Signature: get_mutation_hotspots(gene, residue=, assembly=)."
         ),
     )

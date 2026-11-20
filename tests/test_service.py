@@ -155,6 +155,18 @@ async def test_hotspots_braf_v600_and_tp53_r175h(cbio_service: CbioService) -> N
     assert tp53["data_version"].startswith("Cancer Hotspots v2 + 3D snapshot")
     cold = await cbio_service.get_mutation_hotspots("TP53", "A1", "GRCh38")
     assert cold["is_hotspot"] is False and cold["total"] == 0
+    assert "not mean benign" in cold["note"]
+
+
+async def test_unobserved_change_at_hotspot_residue_is_not_a_hotspot(
+    cbio_service: CbioService,
+) -> None:
+    # KRAS G12 is a hotspot residue, but G12W was never seen there.
+    out = await cbio_service.get_mutation_hotspots("KRAS", "G12W", "GRCh38")
+    assert out["is_hotspot"] is False and out["residue_is_hotspot"] is True
+    assert out["variant_tumor_count"] == 0
+    seen = await cbio_service.get_mutation_hotspots("KRAS", "G12C", "GRCh38")
+    assert seen["is_hotspot"] is True and seen["residue_is_hotspot"] is True
 
 
 async def test_no_code_path_reaches_row_level_endpoints() -> None:

@@ -19,6 +19,12 @@ from cbioportal_link.exceptions import InvalidInputError
 DATA = Path(__file__).parent / "data"
 ASSEMBLIES = ("GRCh38", "GRCh37")
 #: ``V600``, ``V600E``, ``p.R175H``, ``600``, ``X327_splice`` -> the residue position.
+NOTE = (
+    "is_hotspot: this change (or residue, if no change given) is a statistically recurrent "
+    "somatic hotspot in the snapshot; residue_is_hotspot: its residue is. Not a hotspot does "
+    "not mean benign, non-pathogenic or non-oncogenic, and a hotspot is not a clinical "
+    "actionability call."
+)
 _RESIDUE = re.compile(r"^(?:p\.)?[A-Za-z*]?(\d{1,5})(?:[A-Za-z*]+|_splice|fs\*?\d*)?$")
 
 
@@ -124,12 +130,14 @@ def answer(gene: str, residue: str | None, position: int | None, assembly: str) 
     }
     if residue is not None:
         payload["residue"] = residue.strip()
-        payload["is_hotspot"] = bool(rows)
+        payload["residue_is_hotspot"] = payload["is_hotspot"] = bool(rows)
         letter = variant_letter(residue)
         if letter is not None:
-            payload["variant_tumor_count"] = max(
-                (r["variants"].get(letter, 0) for r in rows), default=0
-            )
+            count = max((r["variants"].get(letter, 0) for r in rows), default=0)
+            payload["variant_tumor_count"] = count
+            # A change never seen at a hotspot residue is not itself a hotspot change.
+            payload["is_hotspot"] = count > 0
+        payload["note"] = NOTE
     prov = provenance()
     payload["source"] = {
         "licence": prov["license"],
