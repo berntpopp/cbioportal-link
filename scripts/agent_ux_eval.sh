@@ -5,7 +5,8 @@
 #   scripts/agent_ux_eval.sh <out-dir> [mcp-url] [task-glob]
 #
 # The server must already be running (python server.py --transport unified --port 18502).
-# SLOT, if set, prefixes each session (e.g. a fleet-wide semaphore wrapper).
+# SLOT, if set, prefixes each session (e.g. a fleet-wide semaphore wrapper); AGENTS narrows
+# the agent list (default "claude codex agy").
 set -uo pipefail
 OUT=${1:?usage: agent_ux_eval.sh <out-dir> [mcp-url] [task-glob]}
 URL=${2:-http://127.0.0.1:18502/mcp}
@@ -18,7 +19,7 @@ curl -sf "${URL%/mcp}/health" >/dev/null || { echo "server not reachable at $URL
 agy mcp add "$NAME" "$URL" >/dev/null
 
 # One session per agent at a time (3 concurrent): prompts run in sequence, agents in parallel.
-for agent in claude codex agy; do
+for agent in ${AGENTS:-claude codex agy}; do
   ( for task in $TASKS; do
       ${SLOT:-} "$HERE/agent_ux_session.sh" "$agent" "$task" "$OUT/$(basename "$task" .md)-$agent" "$URL"
     done ) &
