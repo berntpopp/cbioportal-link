@@ -122,6 +122,9 @@ def check_args(residue: str | None, assembly: str) -> int | None:
 def answer(gene: str, residue: str | None, position: int | None, assembly: str) -> dict[str, Any]:
     """The get_mutation_hotspots payload for a resolved gene symbol."""
     rows = lookup(gene, assembly, position)
+    letter = None if residue is None else variant_letter(residue)
+    if letter is not None:  # indel/splice regions say nothing about one substitution
+        rows = [r for r in rows if r["type"] in ("single_residue", "3d")]
     payload: dict[str, Any] = {
         "gene": gene,
         "assembly": assembly,
@@ -131,7 +134,6 @@ def answer(gene: str, residue: str | None, position: int | None, assembly: str) 
     if residue is not None:
         payload["residue"] = residue.strip()
         payload["residue_is_hotspot"] = payload["is_hotspot"] = bool(rows)
-        letter = variant_letter(residue)
         if letter is not None:
             count = max((r["variants"].get(letter, 0) for r in rows), default=0)
             payload["variant_tumor_count"] = count

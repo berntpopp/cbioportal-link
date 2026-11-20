@@ -169,6 +169,14 @@ async def test_unobserved_change_at_hotspot_residue_is_not_a_hotspot(
     assert seen["is_hotspot"] is True and seen["residue_is_hotspot"] is True
 
 
+async def test_a_substitution_gets_only_residue_calls(cbio_service: CbioService) -> None:
+    # BRAF's 592-604 in-frame-indel region covers V600 but says nothing about V600E.
+    region = await cbio_service.get_mutation_hotspots("BRAF", "V600", "GRCh38")
+    assert "in_frame_indel" in {r["type"] for r in region["hotspots"]}
+    change = await cbio_service.get_mutation_hotspots("BRAF", "V600E", "GRCh38")
+    assert {r["type"] for r in change["hotspots"]} == {"single_residue", "3d"}
+
+
 async def test_no_code_path_reaches_row_level_endpoints() -> None:
     root = Path(cbioportal_link.__file__).parent
     source = "\n".join(p.read_text() for p in root.rglob("*.py"))
