@@ -1,0 +1,14 @@
+[
+ {
+  "entrezGeneId": 673,
+  "proteinPosStart": 600,
+  "proteinPosEnd": 600,
+  "count": 9070
+ },
+ {
+  "entrezGeneId": 673,
+  "proteinPosStart": 601,
+  "proteinPosEnd": 601,
+  "count": 473
+ }
+]

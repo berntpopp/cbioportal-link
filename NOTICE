@@ -1,0 +1,43 @@
+cbioportal-link
+Copyright (c) cbioportal-link contributors. Code licensed under the MIT licence (see LICENSE).
+
+Research use only. Not clinical decision support and not a clinical actionability report.
+
+cBioPortal data
+---------------
+cbioportal-link queries the public cBioPortal web API (https://api.cbioportal.org) live and
+stores no cBioPortal data. Unless a study states otherwise, data in cBioPortal are available
+under the ODC Open Database License (ODbL 1.0,
+https://opendatacommons.org/licenses/odbl/1.0/) with attribution to the original studies.
+Some studies set their own terms in their description (for example msk_chord_2024:
+Creative Commons BY-NC-ND 4.0); each response row carries the study's licence, a
+`restricted` flag, its citation and PMID, and restricted studies are excluded unless the
+caller opts in.
+
+Cite cBioPortal:
+  Gao J et al. Integrative analysis of complex cancer genomics and clinical profiles using
+  the cBioPortal. Sci Signal 2013. PMID 23550210.
+  de Bruijn I et al. Analysis and visualization of longitudinal genomic and clinical data
+  from the AACR Project GENIE Biopharma Collaborative in cBioPortal. Cancer Res 2023.
+  PMID 37668528.
+and each study's own publication.
+
+Cancer Hotspots data (bundled)
+------------------------------
+cbioportal_link/data/hotspots_grch37.tsv and hotspots_grch38.tsv are derived from Cancer
+Hotspots (https://www.cancerhotspots.org, https://www.3dhotspots.org), Memorial Sloan
+Kettering Cancer Center. The data are licensed under the ODC Open Database License
+(ODbL 1.0) as stated by cancerhotspots.org (cBioPortal/cancerhotspots commit b257eeaf).
+The derived tables are offered under the same ODbL 1.0 licence. They were built by
+scripts/build_hotspots.py from genome-nexus/genome-nexus-importer commit
+4c2d0525d1f5686246ecb159cb8ad9c1962f28b4 (hotspots_v2_v3_and_3d.txt, sha256 recorded in
+cbioportal_link/data/hotspots_provenance.json), keeping the v2 and 3D hotspots. No Cancer
+Hotspots source code (AGPL-3.0) is included.
+
+Cite Cancer Hotspots:
+  Chang MT et al. Identifying recurrent mutations in cancer reveals widespread lineage
+  diversity and mutational specificity. Nat Biotechnol 2016. PMID 26619011.
+  Chang MT et al. Accelerating discovery of functional mutant alleles in cancer.
+  Cancer Discov 2018. PMID 29247016.
+  Gao J et al. 3D clusters of somatic mutations in cancer reveal numerous rare mutations as
+  functional targets. Genome Med 2017. PMID 28115009.
