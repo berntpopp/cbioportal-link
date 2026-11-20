@@ -77,7 +77,8 @@ def build_capabilities() -> dict[str, Any]:
             "default_study_without_filter": DEFAULT_STUDY,
         },
         "not_exposed": "expression and other molecular-data matrices, copy-number segments, "
-        "clinical data and any sample- or patient-level rows",
+        "clinical data and any sample- or patient-level rows; for those use the study's own "
+        "page and downloads (get_study `url`), under that study's terms",
         "rate_limit_policy": RATE_LIMIT_POLICY,
         "caching": "in-process only, keyed on /api/info dbVersion; no cBioPortal data is "
         "stored or redistributed",
