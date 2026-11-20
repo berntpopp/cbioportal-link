@@ -346,14 +346,13 @@ class CbioService:
     ) -> dict[str, Any]:
         """Per-study mutation (and optional protein change) and CNA frequency of one gene."""
         if study_ids and cancer_type is not None:
-            keep = {"gene": gene, "protein_change": protein_change}
-            keep = {k: v for k, v in keep.items() if v is not None}
+            keep = {"gene": gene} | ({"protein_change": protein_change} if protein_change else {})
             raise InvalidInputError(
                 "Give `study_ids` or `cancer_type`, not both.",
                 field="cancer_type",
                 next_commands=[
-                    cmd("get_gene_alteration_frequency", **keep, study_ids=study_ids),
-                    cmd("get_gene_alteration_frequency", **keep, cancer_type=cancer_type),
+                    cmd("get_gene_alteration_frequency", **keep, **sel)
+                    for sel in ({"study_ids": study_ids}, {"cancer_type": cancer_type})
                 ],
             )
         resolved = await self._gene(gene)
