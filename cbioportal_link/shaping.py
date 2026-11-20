@@ -152,9 +152,32 @@ def ratio(numerator: int, denominator: int) -> float | None:
     return round(numerator / denominator, 4) if denominator else None
 
 
-def normalize_protein_change(value: str) -> str:
-    """``p.G12C`` / ``g12c`` -> ``G12C`` (cBioPortal's one-letter form)."""
+_AA3 = dict(  # three-letter amino-acid code -> one letter
+    zip(
+        re.findall("...", "alaargasnaspcysglngluglyhisileleulysmetpheproserthrtrptyrvalter"),
+        "ARNDCQEGHILKMFPSTWYV*",
+        strict=True,
+    )
+)
+_THREE_LETTER = re.compile(r"^(?:p\.)?([A-Za-z]{3})(\d{1,5})([A-Za-z]{3}|\*)?$")
+
+
+def one_letter(value: str) -> str:
+    """``p.Gly12Cys`` -> ``G12C``; anything else is returned stripped, unchanged."""
     text = value.strip()
+    m = _THREE_LETTER.match(text)
+    if not m:
+        return text
+    ref, pos, alt = m.groups()
+    ref1 = _AA3.get(ref.lower())
+    if ref1 is None or (alt and alt != "*" and alt.lower() not in _AA3):
+        return text
+    return f"{ref1}{pos}{_AA3.get(alt.lower(), '*') if alt else ''}"
+
+
+def normalize_protein_change(value: str) -> str:
+    """``p.G12C`` / ``g12c`` / ``p.Gly12Cys`` -> ``G12C`` (cBioPortal's one-letter form)."""
+    text = one_letter(value)
     if text[:2].lower() == "p.":
         text = text[2:]
     return text.upper()

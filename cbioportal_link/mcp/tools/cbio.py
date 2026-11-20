@@ -48,8 +48,11 @@ OptCancerType = Annotated[
     ),
 ]
 OptProteinChange = Annotated[
-    Annotated[str, Field(pattern=r"^(?:[pP]\.)?[A-Za-z*]\d{1,5}[A-Za-z0-9_*>]{0,30}$")] | None,
-    Field(description="One-letter protein change, e.g. V600E or G12C (p. prefix optional)."),
+    Annotated[str, Field(pattern=r"^(?:[pP]\.)?[A-Za-z*]{1,3}\d{1,5}[A-Za-z0-9_*>]{0,30}$")] | None,
+    Field(
+        description="Protein change, e.g. V600E or G12C (p. prefix optional; three-letter "
+        "p.Gly12Cys is converted)."
+    ),
 ]
 IncludeRestricted = Annotated[
     StrictBool,

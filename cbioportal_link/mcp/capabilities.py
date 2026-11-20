@@ -62,7 +62,7 @@ def build_capabilities() -> dict[str, Any]:
             "gene": "HGNC symbol (BRAF) or NCBI Gene ID (673, NCBIGene:673)",
             "study": "cBioPortal study ID (skcm_tcga_pan_can_atlas_2018)",
             "cancer_type": "lowercase OncoTree code as cBioPortal uses it (luad, skcm, mel)",
-            "protein_change": "one-letter protein change (V600E, G12C; p. prefix optional)",
+            "protein_change": "protein change (V600E, G12C; p. prefix optional; p.Gly12Cys is converted)",
         },
         "data_version": "cBioPortal portal + database version from /api/info and each "
         "study's import_date; hotspots: " + hotspots.data_version(),

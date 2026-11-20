@@ -26,6 +26,7 @@ from cbioportal_link.shaping import (
     licence,
     mutation_variant,
     normalize_protein_change,
+    one_letter,
     page_args,
     page_block,
     ratio,
@@ -117,6 +118,7 @@ class CbioService:
                 "no-derivatives); it is excluded unless include_restricted=true.",
                 field=field,
                 hint="Set include_restricted=true to opt in; its rows stay flagged restricted.",
+                retry_with={"include_restricted": True},
             )
 
     async def _gene(self, gene: str) -> dict[str, Any]:
@@ -143,7 +145,8 @@ class CbioService:
             raise NotFoundError(
                 "cBioPortal has no gene with this symbol or ID.",
                 field="gene",
-                hint="Check the current HGNC symbol (aliases are not resolved here).",
+                hint="Check the current HGNC symbol (aliases are not resolved here); "
+                "hgnc_resolve_symbol is a genefoundry router tool (hgnc-link), not on this server.",
                 next_commands=[cmd("hgnc_resolve_symbol", query=value)],
             ) from None
         if not isinstance(raw, dict) or not raw.get("entrezGeneId"):
@@ -343,8 +346,15 @@ class CbioService:
     ) -> dict[str, Any]:
         """Per-study mutation (and optional protein change) and CNA frequency of one gene."""
         if study_ids and cancer_type is not None:
+            keep = {"gene": gene, "protein_change": protein_change}
+            keep = {k: v for k, v in keep.items() if v is not None}
             raise InvalidInputError(
-                "Give `study_ids` or `cancer_type`, not both.", field="cancer_type"
+                "Give `study_ids` or `cancer_type`, not both.",
+                field="cancer_type",
+                next_commands=[
+                    cmd("get_gene_alteration_frequency", **keep, study_ids=study_ids),
+                    cmd("get_gene_alteration_frequency", **keep, cancer_type=cancer_type),
+                ],
             )
         resolved = await self._gene(gene)
         chosen, selection = await self._select(
@@ -481,6 +491,7 @@ class CbioService:
         self, gene: str, residue: str | None, assembly_name: str
     ) -> dict[str, Any]:
         """Cancer Hotspots calls for a gene, or whether one residue is a hotspot."""
+        residue = None if residue is None else one_letter(residue)
         position = hotspots.check_args(residue, assembly_name)
         resolved = await self._gene(gene)
         payload = hotspots.answer(resolved["symbol"], residue, position, assembly_name)

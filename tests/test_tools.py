@@ -124,3 +124,47 @@ async def test_descriptions_name_only_returned_fields(facade: Any, call_tool: An
     hot = await call_tool(facade, "get_mutation_hotspots", {"gene": "BRAF", "residue": "V600E"})
     assert {"residue", "type", "tumor_count", "variants", "tumor_types"} <= set(hot["hotspots"][0])
     assert {"is_hotspot", "variant_tumor_count"} <= set(hot)
+
+
+async def test_restricted_study_error_offers_the_opt_in_retry(facade: Any) -> None:
+    args = {"gene": "KRAS", "study_ids": ["msk_chord_2024"], "protein_change": "G12C"}
+    res = await _raw(facade, "get_gene_alteration_frequency", args)
+    assert res.is_error is True
+    assert res.structured_content["_meta"]["next_commands"] == [
+        {
+            "tool": "get_gene_alteration_frequency",
+            "arguments": {**args, "include_restricted": True},
+        }
+    ]
+
+
+async def test_both_selectors_error_offers_each_selector(facade: Any) -> None:
+    args = {"gene": "KRAS", "study_ids": ["luad_tcga_pan_can_atlas_2018"], "cancer_type": "luad"}
+    res = await _raw(facade, "get_gene_alteration_frequency", args)
+    assert res.is_error is True
+    tool = "get_gene_alteration_frequency"
+    assert res.structured_content["_meta"]["next_commands"] == [
+        {"tool": tool, "arguments": {"gene": "KRAS", "study_ids": args["study_ids"]}},
+        {"tool": tool, "arguments": {"gene": "KRAS", "cancer_type": "luad"}},
+    ]
+
+
+async def test_three_letter_protein_change_is_accepted(facade: Any, call_tool: Any) -> None:
+    out = await call_tool(
+        facade,
+        "get_gene_alteration_frequency",
+        {
+            "gene": "KRAS",
+            "study_ids": ["luad_tcga_pan_can_atlas_2018"],
+            "protein_change": "p.Gly12Cys",
+        },
+    )
+    assert out["studies"][0]["protein_change"]["value"] == "G12C"
+    hot = await call_tool(facade, "get_mutation_hotspots", {"gene": "TP53", "residue": "Arg175His"})
+    assert hot["is_hotspot"] is True and hot["variant_tumor_count"] == 386
+
+
+async def test_unknown_gene_hint_says_the_resolver_lives_on_the_router(facade: Any) -> None:
+    res = await _raw(facade, "get_gene_alteration_frequency", {"gene": "KRASX"})
+    body = res.structured_content
+    assert body["error_code"] == "not_found" and "genefoundry router" in body["hint"]
