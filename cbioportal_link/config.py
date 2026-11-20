@@ -134,7 +134,7 @@ class CbioSettings(BaseModel):
         default=2.0, ge=0, le=60, description="Exponential backoff base (seconds)."
     )
     max_response_bytes: StrictInt = Field(
-        default=16 * 1024 * 1024,
+        default=8 * 1024 * 1024,
         ge=1,
         le=64 * 1024 * 1024,
         description="Hard cap on one upstream response body (fail-closed, never truncate).",
@@ -147,6 +147,13 @@ class CbioSettings(BaseModel):
     )
     info_ttl_s: StrictInt = Field(
         default=3600, ge=1, le=86_400, description="How long /api/info (dbVersion) is cached."
+    )
+    cache_max_bytes: StrictInt = Field(
+        default=32 * 1024 * 1024,
+        ge=1,
+        le=1024 * 1024 * 1024,
+        description="Cache budget in raw response bytes (oldest evicted first); keeps the "
+        "decoded objects well inside the container memory limit.",
     )
     cache_maxsize: StrictInt = Field(
         default=512, ge=1, le=10_000, description="In-process response cache entries."
@@ -224,6 +231,7 @@ class ServerSettings(BaseSettings):
             "max_response_bytes",
             "cache_ttl_s",
             "info_ttl_s",
+            "cache_max_bytes",
             "cache_maxsize",
         ):
             raw = parsed.get(name)

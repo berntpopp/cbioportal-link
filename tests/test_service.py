@@ -189,3 +189,24 @@ def test_shipped_hotspot_tables_match_their_provenance() -> None:
         data = (hotspots.DATA / entry["derived_file"]).read_bytes()
         assert hashlib.sha256(data).hexdigest() == entry["derived_sha256"]
         assert data.count(b"\n") - 1 == entry["rows"]
+
+
+@pytest.mark.parametrize(
+    ("description", "expected"),
+    [
+        ('under the <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/">CC</a>',
+         ("CC-BY-NC-ND-4.0", True)),
+        ("available under the Creative Commons BY-NC-ND 4.0 license.", ("CC-BY-NC-ND-4.0", True)),
+        ("Free for research; for commercial use, please contact us.",
+         ("see study description (commercial use restricted)", True)),
+        ("Creative Commons BY 4.0 license", ("CC-BY-4.0", False)),
+        ("TCGA Firehose Legacy.", ("ODbL-1.0", False)),
+        (None, ("ODbL-1.0", False)),
+    ],
+)  # fmt: skip
+def test_licence_parser_reads_every_description_form(
+    description: str | None, expected: tuple[str, bool]
+) -> None:
+    from cbioportal_link.shaping import licence
+
+    assert licence(description) == expected

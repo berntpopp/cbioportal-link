@@ -16,7 +16,7 @@ not a clinical actionability report.
 
 - Live proxy of `https://api.cbioportal.org` (the scripted-access host named in
   `cbioportal.org/llms.txt`). Outbound allowlist = that one origin (URL guard on every hop,
-  ≤ 5 redirects, 16 MiB decoded cap, fail closed).
+  ≤ 5 redirects, 8 MiB decoded cap, fail closed).
 - llms.txt policy: filtered requests only; **sequential** (an `asyncio.Lock` keeps one request
   in flight process-wide, plus a 0.5 s spacing limiter and a daily cap); in-process cache keyed
   on `/api/info` `dbVersion` (24 h TTL; `/api/info` itself 1 h); exponential backoff on

@@ -79,8 +79,10 @@ class CbioClient:
             max_redirects=MAX_REDIRECTS,
             event_hooks={"request": [guard]},
         )
-        self._cache: OrderedDict[str, tuple[float, Any]] = OrderedDict()
-        self._inflight: dict[str, asyncio.Future[Any]] = {}
+        # key -> (expiry, value, raw body bytes); bounded by bytes, not entries (memory limit)
+        self._cache: OrderedDict[str, tuple[float, Any, int]] = OrderedDict()
+        self._cache_bytes = 0
+        self._inflight: dict[str, asyncio.Future[tuple[Any, int]]] = {}
         self._sequential = asyncio.Lock()  # llms.txt: one request in flight, never concurrent
         self.upstream_requests = 0
         self.cache_hits = 0
@@ -92,17 +94,27 @@ class CbioClient:
     def _cache_get(self, key: str) -> Any:
         hit = self._cache.get(key)
         if hit is None or hit[0] < time.monotonic():
-            self._cache.pop(key, None)
+            self._cache_drop(key)
             return None
         self._cache.move_to_end(key)
         self.cache_hits += 1
         return hit[1]
 
-    def _cache_put(self, key: str, value: Any) -> None:
+    def _cache_drop(self, key: str) -> None:
+        old = self._cache.pop(key, None)
+        if old is not None:
+            self._cache_bytes -= old[2]
+
+    def _cache_put(self, key: str, value: Any, size: int = 0) -> None:
         ttl = self.settings.info_ttl_s if key == INFO_PATH else self.settings.cache_ttl_s
-        self._cache[key] = (time.monotonic() + ttl, value)
-        while len(self._cache) > self.settings.cache_maxsize:
-            self._cache.popitem(last=False)
+        self._cache_drop(key)
+        self._cache[key] = (time.monotonic() + ttl, value, size)
+        self._cache_bytes += size
+        while self._cache and (
+            len(self._cache) > self.settings.cache_maxsize
+            or self._cache_bytes > self.settings.cache_max_bytes
+        ):
+            self._cache_drop(next(iter(self._cache)))
 
     async def info(self) -> dict[str, Any]:
         """``/api/info`` (portal + database version); cached for ``info_ttl_s``."""
@@ -140,14 +152,16 @@ class CbioClient:
                 self._fetch(method, path, params, body)
             )
             task.add_done_callback(lambda done: self._settle(key, done))
-        return await asyncio.shield(task)
+        return (await asyncio.shield(task))[0]
 
-    def _settle(self, key: str, task: asyncio.Future[Any]) -> None:
+    def _settle(self, key: str, task: asyncio.Future[tuple[Any, int]]) -> None:
         self._inflight.pop(key, None)
         if not task.cancelled() and task.exception() is None:
-            self._cache_put(key, task.result())
+            self._cache_put(key, *task.result())
 
-    async def _fetch(self, method: str, path: str, params: dict[str, Any] | None, body: Any) -> Any:
+    async def _fetch(
+        self, method: str, path: str, params: dict[str, Any] | None, body: Any
+    ) -> tuple[Any, int]:
         attempts = self.settings.max_retries + 1
         response: httpx.Response | None = None
         for attempt in range(attempts):
@@ -190,7 +204,7 @@ class CbioClient:
                 "The cBioPortal API returned an unexpected status.", retryable=False
             )
         try:
-            return response.json()
+            return response.json(), len(response.content)
         except ValueError:
             raise UpstreamSchemaError(
                 "cBioPortal returned a non-JSON body.", field="response"

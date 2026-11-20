@@ -15,7 +15,7 @@ All notable changes to this project are documented here. The format follows
   `get_mutation_hotspots`, `get_server_capabilities`, `get_diagnostics`.
 - cBioPortal llms.txt policy: filtered requests only, one request in flight, 0.5 s spacing,
   cache keyed on `/api/info` `dbVersion`, exponential backoff on 429 honouring `Retry-After`,
-  at most 10 studies per call; 16 MiB decoded-byte cap and a single-origin URL guard.
+  at most 10 studies per call; 8 MiB decoded-byte cap and a 32 MiB byte-budgeted cache and a single-origin URL guard.
 - Frequencies are samples altered / samples profiled for the gene (panel-aware), per study,
   with cohort, licence, citation and import date on every row; NC/ND studies are excluded
   unless `include_restricted=true` and stay flagged.

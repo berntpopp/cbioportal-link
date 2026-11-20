@@ -89,7 +89,8 @@ transport guard and browser CORS are independent controls.
 | `CBIOPORTAL_LINK_CBIO__MAX_WAIT_S` | `30.0` | Longest queue wait for a request slot before answering `rate_limited` with `retry_after_s`. |
 | `CBIOPORTAL_LINK_CBIO__MAX_RETRIES` | `2` | Retries on 429/5xx/timeouts (exponential backoff, honours `Retry-After`). |
 | `CBIOPORTAL_LINK_CBIO__BACKOFF_BASE_S` | `2.0` | Backoff base (seconds). |
-| `CBIOPORTAL_LINK_CBIO__MAX_RESPONSE_BYTES` | `16777216` | Hard cap on one decoded upstream body (fail closed). |
+| `CBIOPORTAL_LINK_CBIO__MAX_RESPONSE_BYTES` | `8388608` | Hard cap on one decoded upstream body (fail closed). |
+| `CBIOPORTAL_LINK_CBIO__CACHE_MAX_BYTES` | `33554432` | Cache budget in raw response bytes; oldest entries are evicted first. |
 | `CBIOPORTAL_LINK_CBIO__CACHE_TTL_S` | `86400` | In-process response cache TTL (keys include `dbVersion`). |
 | `CBIOPORTAL_LINK_CBIO__INFO_TTL_S` | `3600` | How long `/api/info` (and so `dbVersion`) is cached. |
 | `CBIOPORTAL_LINK_CBIO__CACHE_MAXSIZE` | `512` | In-process response cache entries. |

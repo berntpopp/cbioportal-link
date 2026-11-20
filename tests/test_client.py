@@ -215,3 +215,17 @@ async def test_404_is_not_found_and_post_sends_json(
     body = [{"entrezGeneId": 673, "proteinPosStart": 600, "proteinPosEnd": 600}]
     assert (await client.post_json("/api/mutation-counts-by-position/fetch", body))[0]["count"]
     assert json.loads(route.calls.last.request.content) == body
+
+
+@respx.mock(base_url=BASE)
+async def test_cache_is_bounded_by_bytes_not_entries(respx_mock: respx.MockRouter) -> None:
+    c = CbioClient(CbioSettings(min_interval_s=0.0, cache_max_bytes=200))
+    c._cache_put(INFO_PATH, load("info"), 10)
+    respx_mock.get(path__regex=r"^/api/genes/").mock(
+        return_value=httpx.Response(200, json=load("gene_BRAF"))  # ~78 raw bytes each
+    )
+    for i in range(5):
+        await c.get_json(f"/api/genes/G{i}")
+    assert c._cache_bytes <= 200 and len(c._cache) < 6
+    assert c._cache_bytes == sum(entry[2] for entry in c._cache.values())
+    await c.aclose()
