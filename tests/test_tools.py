@@ -121,7 +121,11 @@ async def test_descriptions_name_only_returned_fields(facade: Any, call_tool: An
     assert {"assembly", "mutated_samples", "study"} <= set(muts)
     types = await call_tool(facade, "list_cancer_types", {"query": "melanoma"})
     assert {"code", "name", "parent"} <= set(types["cancer_types"][0])
-    hot = await call_tool(facade, "get_mutation_hotspots", {"gene": "BRAF", "residue": "V600E"})
+    hot = await call_tool(
+        facade,
+        "get_mutation_hotspots",
+        {"gene": "BRAF", "residue": "V600E", "response_mode": "standard"},
+    )
     assert {"residue", "type", "tumor_count", "variants", "tumor_types"} <= set(hot["hotspots"][0])
     assert {"is_hotspot", "variant_tumor_count"} <= set(hot)
 

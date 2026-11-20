@@ -1,14 +1,14 @@
 """cBioPortal data plane: validate input, run small filtered queries, shape honest payloads.
 
-Returns plain dicts and raises typed :mod:`cbioportal_link.exceptions` errors; the MCP
-envelope owns ``success``/``_meta``. Frequencies are always numerator / samples profiled for
-the gene (gene-panel aware), per study; overlapping studies are never summed. Studies whose
-own terms are non-commercial or no-derivatives are excluded unless the caller opts in, and
+Returns plain dicts and raises typed errors; the MCP envelope owns ``success``/``_meta``.
+Frequencies are numerator / samples profiled for the gene (panel-aware), per study, never
+summed. Non-commercial or no-derivatives studies are excluded unless the caller opts in;
 every row carries its licence and citation. Sample and patient identifiers never leave here.
 """
 
 from __future__ import annotations
 
+import difflib
 import re
 from collections import Counter
 from datetime import UTC, datetime
@@ -18,7 +18,7 @@ from cbioportal_link import hotspots
 from cbioportal_link.api.client import CbioClient
 from cbioportal_link.exceptions import InvalidInputError, NotFoundError, UpstreamSchemaError
 from cbioportal_link.mcp.next_commands import cmd
-from cbioportal_link.mcp.resources import COHORT_NOTE, POSITION_SCOPE
+from cbioportal_link.mcp.resources import COHORT_NOTE, DEFAULT_WARNING, POSITION_SCOPE
 from cbioportal_link.shaping import (
     MAX_LIMIT,
     assembly,
@@ -32,6 +32,7 @@ from cbioportal_link.shaping import (
     rows_of,
     study_ref,
     study_row,
+    study_text,
     variant_row,
 )
 
@@ -99,13 +100,17 @@ class CbioService:
         return found
 
     async def _study(self, study_id: str, field: str = "study_id") -> dict[str, Any]:
-        raw = (await self._studies()).get(study_id.strip())
+        studies = await self._studies()
+        raw = studies.get(study_id.strip())
         if raw is None:
+            close = difflib.get_close_matches(study_id.strip(), list(studies), n=3, cutoff=0.85)
             raise NotFoundError(
                 "No public cBioPortal study has this ID.",
                 field=field,
                 hint="Find study IDs with search_studies(query=..., cancer_type=...).",
-                next_commands=[cmd("search_studies", query=study_id.strip()[:40])],
+                candidates=close or None,
+                next_commands=[cmd("get_study", study_id=c) for c in close]
+                or [cmd("search_studies", query=study_id.strip()[:40])],
             )
         return raw
 
@@ -209,13 +214,8 @@ class CbioService:
             codes = await self._descendants(cancer_type)
             studies = [s for s in studies if s.get("cancerTypeId") in codes]
         if query is not None:
-            term = query.strip().casefold()
-            studies = [
-                s
-                for s in studies
-                if any(term in str(s.get(k) or "").casefold() for k in ("studyId", "name"))
-                or term in str(s.get("citation") or "").casefold()
-            ]
+            words = re.split(r"[\s_]+", query.strip().casefold())
+            studies = [s for s in studies if all(w in study_text(s) for w in words)]
         restricted = [s for s in studies if licence(s.get("description"))[1]]
         if not include_restricted:
             studies = [s for s in studies if s not in restricted]
@@ -291,7 +291,7 @@ class CbioService:
         self, raw: dict[str, Any], gene: dict[str, Any], protein_change: str | None
     ) -> dict[str, Any]:
         sid = str(raw["studyId"])
-        row = {**study_ref(raw), "cancer_type": raw.get("cancerTypeId")}
+        row = {**study_ref(raw), "cancer_type": raw.get("cancerTypeId"), "assembly": assembly(raw)}
         profiles = await self._profiles(sid)
         mut = profiles.get("mutation")
         if mut is None:
@@ -369,6 +369,7 @@ class CbioService:
             "truncated": selection.get("studies_matching", len(rows)) > len(rows),
             "unit": "samples",
             "note": COHORT_NOTE,
+            **({"warning": DEFAULT_WARNING} if "default" in selection else {}),
         }
         if "resolved_from" in resolved:
             payload["resolved_from"] = resolved["resolved_from"]
@@ -486,12 +487,12 @@ class CbioService:
         return await self._stamp(payload)
 
     async def get_mutation_hotspots(
-        self, gene: str, residue: str | None, assembly_name: str
+        self, gene: str, residue: str | None, assembly_name: str, mode: str = "compact"
     ) -> dict[str, Any]:
         """Cancer Hotspots calls for a gene, or whether one residue is a hotspot."""
         position = hotspots.check_args(residue, assembly_name)
         resolved = await self._gene(gene)
-        payload = hotspots.answer(resolved["symbol"], residue, position, assembly_name)
+        payload = hotspots.answer(resolved["symbol"], residue, position, assembly_name, mode)
         if "resolved_from" in resolved:
             payload["resolved_from"] = resolved["resolved_from"]
         payload["retrieved_at"] = _now()

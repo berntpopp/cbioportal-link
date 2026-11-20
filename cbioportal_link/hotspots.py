@@ -22,8 +22,8 @@ ASSEMBLIES = ("GRCh38", "GRCh37")
 NOTE = (
     "is_hotspot: this change (or residue, if no change given) is a statistically recurrent "
     "somatic hotspot in the snapshot; residue_is_hotspot: its residue is. Not a hotspot does "
-    "not mean benign, non-pathogenic or non-oncogenic, and a hotspot is not a clinical "
-    "actionability call."
+    "not mean benign, non-pathogenic or non-oncogenic (hotspots count somatic calls only, so "
+    "germline polymorphisms never appear), and a hotspot is not a clinical actionability call."
 )
 _RESIDUE = re.compile(r"^(?:p\.)?[A-Za-z*]?(\d{1,5})(?:[A-Za-z*]+|_splice|fs\*?\d*)?$")
 
@@ -119,9 +119,13 @@ def check_args(residue: str | None, assembly: str) -> int | None:
     return position
 
 
-def answer(gene: str, residue: str | None, position: int | None, assembly: str) -> dict[str, Any]:
+def answer(
+    gene: str, residue: str | None, position: int | None, assembly: str, mode: str = "compact"
+) -> dict[str, Any]:
     """The get_mutation_hotspots payload for a resolved gene symbol."""
     rows = lookup(gene, assembly, position)
+    if mode in ("minimal", "compact"):  # the per-tumour-type breakdown is the bulk
+        rows = [{k: v for k, v in r.items() if k != "tumor_types"} for r in rows]
     letter = None if residue is None else variant_letter(residue)
     if letter is not None:  # indel/splice regions say nothing about one substitution
         rows = [r for r in rows if r["type"] in ("single_residue", "3d")]

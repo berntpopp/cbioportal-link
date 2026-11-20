@@ -62,6 +62,7 @@ class _Metrics:
             per_tool = {k: dict(v) for k, v in sorted(self._per_tool.items())}
         report_rate = requests >= _ERROR_RATE_MIN_SAMPLE
         return {
+            "scope": "this server process since start, all clients (not one session)",
             "requests": requests,
             "errors": errors,
             "error_rate": round(errors / requests, 4) if report_rate else None,

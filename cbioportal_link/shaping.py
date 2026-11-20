@@ -72,6 +72,12 @@ def assembly(raw: dict[str, Any]) -> str:
     return ASSEMBLY.get(ref.lower(), ref or "unknown")
 
 
+def study_text(raw: dict[str, Any]) -> str:
+    """ID, name and citation of a study as one casefolded string for keyword search."""
+    text = " ".join(str(raw.get(k) or "") for k in ("studyId", "name", "citation"))
+    return text.replace("_", " ").casefold()
+
+
 def study_ref(raw: dict[str, Any]) -> dict[str, Any]:
     """The per-row provenance every answer carries: who, licence, citation, import date."""
     code, restricted = licence(raw.get("description"))

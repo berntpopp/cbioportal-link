@@ -28,7 +28,13 @@ LICENCE_NOTE = (
 COHORT_NOTE = (
     "frequency = samples altered / samples profiled for this gene in that study (samples "
     "whose panel lacks the gene are not_profiled). Studies can share patients (e.g. TCGA "
-    "releases): compare rows, never sum them."
+    "releases): compare rows, never sum them. A study is picked by its own cancer type and "
+    "its denominator covers the whole study, e.g. an NSCLC cohort filed under luad."
+)
+
+DEFAULT_WARNING = (
+    "No study_ids or cancer_type: answered from msk_impact_2017 alone, one pan-cancer "
+    "targeted-panel cohort (MSK), not a tumour-specific or portal-wide frequency."
 )
 
 POSITION_SCOPE = (

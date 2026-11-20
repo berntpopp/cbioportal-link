@@ -375,11 +375,11 @@ def register_cbio_tools(mcp: FastMCP) -> None:
         description=(
             "Get Cancer Hotspots calls for a gene (bundled v2 + 3D snapshot, ODbL 1.0): "
             "residue, type (single_residue, in_frame_indel, splice_site, 3d), tumor_count, "
-            "q_value (3d: p_value, clusters), variants and tumor_types per residue. With "
+            "q_value (3d: p_value, clusters), variants (+ tumor_types in standard mode). With "
             "residue (V600, V600E, R175H) it answers residue_is_hotspot and is_hotspot (for "
             "a change: seen at a hotspot residue, variant_tumor_count > 0); not a hotspot "
             "does not mean benign. Residues follow the assembly's transcript (default GRCh38). "
-            "Signature: get_mutation_hotspots(gene, residue=, assembly=)."
+            "Signature: get_mutation_hotspots(gene, residue=, assembly=, response_mode=)."
         ),
     )
     async def get_mutation_hotspots(
@@ -392,13 +392,20 @@ def register_cbio_tools(mcp: FastMCP) -> None:
             Literal["GRCh38", "GRCh37"],
             Field(description="Build whose transcript numbers the residues (default GRCh38)."),
         ] = "GRCh38",
+        response_mode: Annotated[
+            ResponseModeValue,
+            Field(
+                description="minimal/compact (default): calls without the per-tumour-type "
+                "breakdown | standard/full: + tumor_types per call."
+            ),
+        ] = "compact",
     ) -> ToolReturn:
-        args = _args(gene=gene, residue=residue)
+        args = _args(gene=gene, residue=residue, response_mode=response_mode)
         return await _run(
             "get_mutation_hotspots",
             args,
             lambda: get_cbio_service().get_mutation_hotspots(
-                gene, residue and one_letter(residue), assembly
+                gene, residue and one_letter(residue), assembly, response_mode
             ),
             lambda p: [cmd("get_gene_alteration_frequency", gene=p["gene"])],
         )

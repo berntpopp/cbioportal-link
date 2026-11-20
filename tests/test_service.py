@@ -236,3 +236,35 @@ async def test_study_pmids_are_deduplicated(cbio_service: CbioService) -> None:
     out = await cbio_service.get_study("luad_tcga_pan_can_atlas_2018")
     pmids = out["study"]["pmid"].split(",")
     assert pmids[0] == "29625048" and len(pmids) == len(set(pmids)) == 11
+
+
+async def test_search_matches_words_in_any_order(cbio_service: CbioService) -> None:
+    out = await cbio_service.search_studies("luad pan can atlas", None, False, 20, 0)
+    assert [s["study_id"] for s in out["studies"]] == ["luad_tcga_pan_can_atlas_2018"]
+
+
+async def test_guessed_study_id_offers_the_close_match(cbio_service: CbioService) -> None:
+    with pytest.raises(NotFoundError) as err:
+        await cbio_service.get_study("luad_tcga_pan_can_atlas_2019")
+    assert err.value.extra["candidates"] == ["luad_tcga_pan_can_atlas_2018"]
+    assert err.value.extra["next_commands"] == [
+        {"tool": "get_study", "arguments": {"study_id": "luad_tcga_pan_can_atlas_2018"}}
+    ]
+
+
+async def test_frequency_rows_carry_assembly_and_default_is_flagged(
+    cbio_service: CbioService,
+) -> None:
+    out = await cbio_service.get_gene_alteration_frequency(
+        "KRAS", ["luad_tcga_pan_can_atlas_2018"], None, None, False
+    )
+    assert out["studies"][0]["assembly"] == "GRCh37" and "warning" not in out
+    default = await cbio_service.get_gene_alteration_frequency("TP53", None, None, None, False)
+    assert "msk_impact_2017" in default["warning"]
+
+
+async def test_hotspot_tumor_types_only_in_standard_mode(cbio_service: CbioService) -> None:
+    lean = await cbio_service.get_mutation_hotspots("KRAS", "G12C", "GRCh38")
+    assert all("tumor_types" not in r for r in lean["hotspots"])
+    full = await cbio_service.get_mutation_hotspots("KRAS", "G12C", "GRCh38", "standard")
+    assert all(r["tumor_types"] for r in full["hotspots"])
