@@ -17,7 +17,7 @@ from cbioportal_link.service import (
     MAX_POSITIONS,
     MAX_STUDIES,
 )
-from cbioportal_link.shaping import MAX_LIMIT, RESPONSE_MODES
+from cbioportal_link.shaping import MAX_LIMIT, RESPONSE_MODES, one_letter
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
@@ -397,6 +397,8 @@ def register_cbio_tools(mcp: FastMCP) -> None:
         return await _run(
             "get_mutation_hotspots",
             args,
-            lambda: get_cbio_service().get_mutation_hotspots(gene, residue, assembly),
+            lambda: get_cbio_service().get_mutation_hotspots(
+                gene, residue and one_letter(residue), assembly
+            ),
             lambda p: [cmd("get_gene_alteration_frequency", gene=p["gene"])],
         )

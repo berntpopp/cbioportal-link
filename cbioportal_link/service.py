@@ -26,7 +26,6 @@ from cbioportal_link.shaping import (
     licence,
     mutation_variant,
     normalize_protein_change,
-    one_letter,
     page_args,
     page_block,
     ratio,
@@ -490,7 +489,6 @@ class CbioService:
         self, gene: str, residue: str | None, assembly_name: str
     ) -> dict[str, Any]:
         """Cancer Hotspots calls for a gene, or whether one residue is a hotspot."""
-        residue = None if residue is None else one_letter(residue)
         position = hotspots.check_args(residue, assembly_name)
         resolved = await self._gene(gene)
         payload = hotspots.answer(resolved["symbol"], residue, position, assembly_name)
