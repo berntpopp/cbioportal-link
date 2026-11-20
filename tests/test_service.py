@@ -268,3 +268,8 @@ async def test_hotspot_tumor_types_only_in_standard_mode(cbio_service: CbioServi
     assert all("tumor_types" not in r for r in lean["hotspots"])
     full = await cbio_service.get_mutation_hotspots("KRAS", "G12C", "GRCh38", "standard")
     assert all(r["tumor_types"] for r in full["hotspots"])
+
+
+async def test_get_study_says_what_is_never_exposed(cbio_service: CbioService) -> None:
+    out = await cbio_service.get_study("luad_tcga_pan_can_atlas_2018")
+    assert "clinical data" in out["not_exposed"] and "url" in out["not_exposed"]

@@ -18,7 +18,7 @@ from cbioportal_link import hotspots
 from cbioportal_link.api.client import CbioClient
 from cbioportal_link.exceptions import InvalidInputError, NotFoundError, UpstreamSchemaError
 from cbioportal_link.mcp.next_commands import cmd
-from cbioportal_link.mcp.resources import COHORT_NOTE, DEFAULT_WARNING, POSITION_SCOPE
+from cbioportal_link.mcp.resources import COHORT_NOTE, DEFAULT_WARNING, NOT_EXPOSED, POSITION_SCOPE
 from cbioportal_link.shaping import (
     MAX_LIMIT,
     assembly,
@@ -248,7 +248,7 @@ class CbioService:
             }
             for p in profiles
         ]
-        return await self._stamp({"study": study})
+        return await self._stamp({"study": study, "not_exposed": NOT_EXPOSED})
 
     async def _select(
         self,

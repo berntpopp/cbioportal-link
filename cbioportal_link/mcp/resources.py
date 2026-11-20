@@ -26,10 +26,14 @@ LICENCE_NOTE = (
 )
 
 COHORT_NOTE = (
-    "frequency = samples altered / samples profiled for this gene in that study (samples "
-    "whose panel lacks the gene are not_profiled). Studies can share patients (e.g. TCGA "
-    "releases): compare rows, never sum them. A study is picked by its own cancer type and "
-    "its denominator covers the whole study, e.g. an NSCLC cohort filed under luad."
+    "frequency = altered / samples profiled for this gene (panel-aware) across the whole "
+    "study, whatever its histologies. Studies share patients: compare rows, never sum."
+)
+
+NOT_EXPOSED = (
+    "expression and other molecular-data matrices, copy-number segments, clinical data and "
+    "any sample- or patient-level rows; for those use the study's own page and downloads "
+    "(get_study `url`), under that study's terms"
 )
 
 DEFAULT_WARNING = (

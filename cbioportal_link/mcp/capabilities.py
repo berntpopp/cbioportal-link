@@ -13,6 +13,7 @@ from cbioportal_link.buildinfo import build_info
 from cbioportal_link.mcp.resources import (
     CBIO_CITATION,
     LICENCE_NOTE,
+    NOT_EXPOSED,
     RATE_LIMIT_POLICY,
     RESEARCH_USE_NOTICE,
 )
@@ -76,9 +77,7 @@ def build_capabilities() -> dict[str, Any]:
             "max_positions": MAX_POSITIONS,
             "default_study_without_filter": DEFAULT_STUDY,
         },
-        "not_exposed": "expression and other molecular-data matrices, copy-number segments, "
-        "clinical data and any sample- or patient-level rows; for those use the study's own "
-        "page and downloads (get_study `url`), under that study's terms",
+        "not_exposed": NOT_EXPOSED,
         "rate_limit_policy": RATE_LIMIT_POLICY,
         "caching": "in-process only, keyed on /api/info dbVersion; no cBioPortal data is "
         "stored or redistributed",
