@@ -266,6 +266,7 @@ def register_cbio_tools(mcp: FastMCP) -> None:
                     "get_gene_alteration_frequency",
                     gene="TP53",
                     study_ids=[p["study"]["study_id"]],
+                    **({"include_restricted": True} if p["study"]["restricted"] else {}),
                 )
             ],
         )

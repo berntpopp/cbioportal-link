@@ -110,8 +110,11 @@ async def test_descriptions_name_only_returned_fields(facade: Any, call_tool: An
         "assembly",
     } <= set(studies["studies"][0])
     assert "restricted_excluded" in studies
-    study = (await call_tool(facade, "get_study", {"study_id": "msk_chord_2024"}))["study"]
+    chord = await call_tool(facade, "get_study", {"study_id": "msk_chord_2024"})
+    study = chord["study"]
     assert {"licence", "restricted", "description", "molecular_profiles"} <= set(study)
+    # the suggested follow-up for a restricted study must not fail on the licence gate
+    assert chord["_meta"]["next_commands"][0]["arguments"]["include_restricted"] is True
     muts = await call_tool(
         facade, "get_gene_mutations", {"gene": "BRAF", "study_id": "skcm_tcga_pan_can_atlas_2018"}
     )
@@ -170,9 +173,9 @@ async def test_three_letter_protein_change_is_accepted(facade: Any, call_tool: A
 
 
 async def test_unknown_gene_hint_says_the_resolver_lives_on_the_router(facade: Any) -> None:
-    res = await _raw(facade, "get_gene_alteration_frequency", {"gene": "KRASX"})
-    body = res.structured_content
-    assert body["error_code"] == "not_found" and "genefoundry router" in body["hint"]
+    for gene in ("KRASX", "ENSG00000133703"):
+        res = await _raw(facade, "get_gene_alteration_frequency", {"gene": gene})
+        assert "genefoundry router" in res.structured_content["hint"]
 
 
 async def test_unknown_three_letter_code_is_an_error_not_zero(facade: Any) -> None:

@@ -17,8 +17,8 @@ from typing import Any
 from cbioportal_link import hotspots
 from cbioportal_link.api.client import CbioClient
 from cbioportal_link.exceptions import InvalidInputError, NotFoundError, UpstreamSchemaError
+from cbioportal_link.mcp import resources as res
 from cbioportal_link.mcp.next_commands import cmd
-from cbioportal_link.mcp.resources import COHORT_NOTE, DEFAULT_WARNING, NOT_EXPOSED, POSITION_SCOPE
 from cbioportal_link.shaping import (
     MAX_LIMIT,
     assembly,
@@ -134,6 +134,7 @@ class CbioService:
                 "`gene` takes an HGNC symbol or an NCBI Gene ID, not this identifier type.",
                 field="gene",
                 allowed_values=GENE_FORMS,
+                hint=res.GENE_HINT,
                 next_commands=[cmd("hgnc_resolve_symbol", query=value)],
             )
         entrez = _ENTREZ.match(value)
@@ -150,8 +151,7 @@ class CbioService:
             raise NotFoundError(
                 "cBioPortal has no gene with this symbol or ID.",
                 field="gene",
-                hint="Check the current HGNC symbol (aliases are not resolved here); "
-                "hgnc_resolve_symbol is a genefoundry router tool (hgnc-link), not on this server.",
+                hint=res.GENE_HINT,
                 next_commands=[cmd("hgnc_resolve_symbol", query=value)],
             ) from None
         if not isinstance(raw, dict) or not raw.get("entrezGeneId"):
@@ -243,7 +243,7 @@ class CbioService:
         study["description"] = fence(raw.get("description"), sid)
         study["pmids"] = pmid_list(raw.get("pmid"))
         study["molecular_profiles"] = [p.get("molecularProfileId") for p in profiles]
-        return await self._stamp({"study": study, "not_exposed": NOT_EXPOSED})
+        return await self._stamp({"study": study, "not_exposed": res.NOT_EXPOSED})
 
     async def _select(
         self,
@@ -363,8 +363,8 @@ class CbioService:
             "returned": len(rows),
             "truncated": selection.get("studies_matching", len(rows)) > len(rows),
             "unit": "samples",
-            "note": COHORT_NOTE,
-            **({"warning": DEFAULT_WARNING} if "default" in selection else {}),
+            "note": res.COHORT_NOTE,
+            **({"warning": res.DEFAULT_WARNING} if "default" in selection else {}),
         }
         if "resolved_from" in resolved:
             payload["resolved_from"] = resolved["resolved_from"]
@@ -447,7 +447,7 @@ class CbioService:
         payload: dict[str, Any] = {
             "gene": resolved["symbol"],
             "positions": [{"position": p, "mutations": counts.get(p, 0)} for p in wanted],
-            "scope": POSITION_SCOPE,
+            "scope": res.POSITION_SCOPE,
         }
         if "resolved_from" in resolved:
             payload["resolved_from"] = resolved["resolved_from"]

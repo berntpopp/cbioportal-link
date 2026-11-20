@@ -36,6 +36,11 @@ NOT_EXPOSED = (
     "(get_study `url`), under that study's terms"
 )
 
+GENE_HINT = (
+    "Check the current HGNC symbol (aliases are not resolved here); "
+    "hgnc_resolve_symbol is a genefoundry router tool (hgnc-link), not on this server."
+)
+
 DEFAULT_WARNING = (
     "No study_ids or cancer_type: answered from msk_impact_2017 alone, one pan-cancer "
     "targeted-panel cohort (MSK), not a tumour-specific or portal-wide frequency."
