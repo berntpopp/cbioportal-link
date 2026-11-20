@@ -402,7 +402,7 @@ def register_cbio_tools(mcp: FastMCP) -> None:
             "residue, type (single_residue, in_frame_indel, splice_site, 3d), tumor_count, "
             "q_value (3d: p_value, clusters), variants (+ tumor_types in standard mode). With "
             "residue (V600, V600E, R175H) it answers residue_is_hotspot and is_hotspot (for "
-            "a change: seen at a hotspot residue, variant_tumor_count > 0); not a hotspot "
+            "a change: variant_tumor_count, its largest count over the calls, is > 0); not a hotspot "
             "does not mean benign. Residues follow the assembly's transcript (default GRCh38). "
             "Signature: get_mutation_hotspots(gene, residue=, assembly=, response_mode=)."
         ),
