@@ -81,7 +81,7 @@ def study_ref(raw: dict[str, Any]) -> dict[str, Any]:
         "licence": code,
         "restricted": restricted,
         "citation": raw.get("citation"),
-        "pmid": raw.get("pmid"),
+        "pmid": ",".join(dict.fromkeys(str(raw["pmid"]).split(","))) if raw.get("pmid") else None,
         "import_date": str(raw.get("importDate") or "")[:10] or None,
     }
 

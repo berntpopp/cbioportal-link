@@ -222,3 +222,9 @@ def test_licence_parser_reads_every_description_form(
     from cbioportal_link.shaping import licence
 
     assert licence(description) == expected
+
+
+async def test_study_pmids_are_deduplicated(cbio_service: CbioService) -> None:
+    out = await cbio_service.get_study("luad_tcga_pan_can_atlas_2018")
+    pmids = out["study"]["pmid"].split(",")
+    assert pmids[0] == "29625048" and len(pmids) == len(set(pmids)) == 11
