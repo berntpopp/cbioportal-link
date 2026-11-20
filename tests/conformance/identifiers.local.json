@@ -1,0 +1,9 @@
+{
+  "params": {
+    "get_gene_alteration_frequency.gene": "gene",
+    "get_gene_mutations.gene": "gene",
+    "get_mutation_position_counts.gene": "gene",
+    "get_mutation_hotspots.gene": "gene"
+  },
+  "reasons": {}
+}

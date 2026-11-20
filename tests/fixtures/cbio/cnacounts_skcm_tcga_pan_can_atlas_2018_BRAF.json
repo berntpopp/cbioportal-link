@@ -1,0 +1,38 @@
+[
+ {
+  "hugoGeneSymbol": "BRAF",
+  "profileType": "gistic",
+  "counts": [
+   {
+    "label": "Heterozygously deleted",
+    "value": "-1",
+    "count": 17
+   },
+   {
+    "label": "Homozygously deleted",
+    "value": "-2",
+    "count": 1
+   },
+   {
+    "label": "Diploid",
+    "value": "0",
+    "count": 125
+   },
+   {
+    "label": "Gained",
+    "value": "1",
+    "count": 209
+   },
+   {
+    "label": "Amplified",
+    "value": "2",
+    "count": 15
+   },
+   {
+    "label": "NA",
+    "value": "NA",
+    "count": 81
+   }
+  ]
+ }
+]

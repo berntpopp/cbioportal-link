@@ -1,0 +1,26 @@
+[
+ {
+  "hugoGeneSymbol": "BRAF",
+  "profileType": "mutations",
+  "counts": [
+   {
+    "label": "Mutated",
+    "value": "MUTATED",
+    "count": 233,
+    "uniqueCount": 233
+   },
+   {
+    "label": "Not Mutated",
+    "value": "NOT_MUTATED",
+    "count": 207,
+    "uniqueCount": 207
+   },
+   {
+    "label": "Not Profiled",
+    "value": "NOT_PROFILED",
+    "count": 8,
+    "uniqueCount": 8
+   }
+  ]
+ }
+]

@@ -1,0 +1,28 @@
+[
+ {
+  "hugoGeneSymbol": "KRAS",
+  "profileType": "cna",
+  "counts": [
+   {
+    "label": "Homozygously deleted",
+    "value": "-2",
+    "count": 4
+   },
+   {
+    "label": "Diploid",
+    "value": "0",
+    "count": 2377
+   },
+   {
+    "label": "Amplified",
+    "value": "2",
+    "count": 41
+   },
+   {
+    "label": "NA",
+    "value": "NA",
+    "count": 231
+   }
+  ]
+ }
+]

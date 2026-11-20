@@ -1,0 +1,17 @@
+{
+ "portalVersion": "v7.2.3",
+ "goRewriteVersion": "v0.1.3",
+ "goRewriteJavaParityCommit": "e0c91c0f99702eedb5cdb65b57277dd31ed7377d",
+ "dbVersion": "3.1.0",
+ "genesetVersion": "msigdb_v2025.1.Hs",
+ "geneTableVersion": "hgnc_v7_2025.10.7",
+ "gitBranch": "v0.1.3",
+ "gitCommitId": "bb36f33199785b09e2d210c42db99f1fe157f1c7",
+ "gitCommitIdDescribe": "bb36f33",
+ "gitCommitIdDescribeShort": "bb36f33",
+ "gitCommitMessageFull": "parity: compare HTML pages without the bot-detection script Cloudflare adds\n\nCloudflare added its challenge-platform script to go.cbioportal.org's\nSwagger UI page on 2026-11-14; it differs per request, so the pages never\nmatched.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01RxcWHeEyvtRsR9kwwRkSxC",
+ "gitCommitMessageShort": "parity: compare HTML pages without the bot-detection script Cloudflare adds",
+ "gitCommitMessageUserEmail": "ino@ino.bio",
+ "gitCommitMessageUserName": "Ino de Bruijn",
+ "gitDirty": false
+}

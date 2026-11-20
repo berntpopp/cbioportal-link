@@ -1,0 +1,32 @@
+[
+ {
+  "molecularProfileId": "msk_chord_2024_cna",
+  "studyId": "msk_chord_2024",
+  "molecularAlterationType": "COPY_NUMBER_ALTERATION",
+  "datatype": "DISCRETE",
+  "name": "Putative copy-number alterations from GISTIC",
+  "description": "Putative copy-number from GISTIC 2.0. Values: -2 = homozygous deletion; -1 = hemizygous deletion; 0 = neutral / no change; 1 = gain; 2 = high level amplification.",
+  "showProfileInAnalysisTab": true,
+  "patientLevel": false
+ },
+ {
+  "molecularProfileId": "msk_chord_2024_mutations",
+  "studyId": "msk_chord_2024",
+  "molecularAlterationType": "MUTATION_EXTENDED",
+  "datatype": "MAF",
+  "name": "Mutations",
+  "description": "Mutation data.",
+  "showProfileInAnalysisTab": true,
+  "patientLevel": false
+ },
+ {
+  "molecularProfileId": "msk_chord_2024_structural_variants",
+  "studyId": "msk_chord_2024",
+  "molecularAlterationType": "STRUCTURAL_VARIANT",
+  "datatype": "SV",
+  "name": "Structural Variants",
+  "description": "Structural Variant Data.",
+  "showProfileInAnalysisTab": true,
+  "patientLevel": false
+ }
+]

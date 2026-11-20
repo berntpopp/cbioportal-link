@@ -1,0 +1,32 @@
+[
+ {
+  "molecularProfileId": "luad_mskcc_2023_met_organotropism_cna",
+  "studyId": "luad_mskcc_2023_met_organotropism",
+  "molecularAlterationType": "COPY_NUMBER_ALTERATION",
+  "datatype": "DISCRETE",
+  "name": "Putative copy-number alterations from GISTIC",
+  "description": "Putative copy-number from GISTIC 2.0. Values: -2 = homozygous deletion; -1 = hemizygous deletion; 0 = neutral / no change; 1 = gain; 2 = high level amplification.",
+  "showProfileInAnalysisTab": true,
+  "patientLevel": false
+ },
+ {
+  "molecularProfileId": "luad_mskcc_2023_met_organotropism_mutations",
+  "studyId": "luad_mskcc_2023_met_organotropism",
+  "molecularAlterationType": "MUTATION_EXTENDED",
+  "datatype": "MAF",
+  "name": "Mutations",
+  "description": "Somatic mutation data of IMPACT sequencing of 2422 LUAD samples and WES sequencing of 231 LUAD samples.",
+  "showProfileInAnalysisTab": true,
+  "patientLevel": false
+ },
+ {
+  "molecularProfileId": "luad_mskcc_2023_met_organotropism_structural_variants",
+  "studyId": "luad_mskcc_2023_met_organotropism",
+  "molecularAlterationType": "STRUCTURAL_VARIANT",
+  "datatype": "SV",
+  "name": "Structural variants",
+  "description": "Structural variants data.",
+  "showProfileInAnalysisTab": true,
+  "patientLevel": false
+ }
+]

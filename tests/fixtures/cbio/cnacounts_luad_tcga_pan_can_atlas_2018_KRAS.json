@@ -1,0 +1,33 @@
+[
+ {
+  "hugoGeneSymbol": "KRAS",
+  "profileType": "gistic",
+  "counts": [
+   {
+    "label": "Heterozygously deleted",
+    "value": "-1",
+    "count": 95
+   },
+   {
+    "label": "Diploid",
+    "value": "0",
+    "count": 240
+   },
+   {
+    "label": "Gained",
+    "value": "1",
+    "count": 147
+   },
+   {
+    "label": "Amplified",
+    "value": "2",
+    "count": 29
+   },
+   {
+    "label": "NA",
+    "value": "NA",
+    "count": 55
+   }
+  ]
+ }
+]

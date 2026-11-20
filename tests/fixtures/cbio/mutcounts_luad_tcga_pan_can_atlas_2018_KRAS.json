@@ -1,0 +1,20 @@
+[
+ {
+  "hugoGeneSymbol": "KRAS",
+  "profileType": "mutations",
+  "counts": [
+   {
+    "label": "Mutated",
+    "value": "MUTATED",
+    "count": 168,
+    "uniqueCount": 168
+   },
+   {
+    "label": "Not Mutated",
+    "value": "NOT_MUTATED",
+    "count": 398,
+    "uniqueCount": 398
+   }
+  ]
+ }
+]
