@@ -18,6 +18,12 @@ from cbioportal_link.exceptions import InvalidInputError
 
 DATA = Path(__file__).parent / "data"
 ASSEMBLIES = ("GRCh38", "GRCh37")
+NOTE = (
+    "is_hotspot: this change (or residue, if no change given) is a statistically recurrent "
+    "somatic hotspot in the snapshot; residue_is_hotspot: its residue is. Not a hotspot does "
+    "not mean benign, non-pathogenic or non-oncogenic (hotspots count somatic calls only, so "
+    "germline polymorphisms never appear), and a hotspot is not a clinical actionability call."
+)
 #: ``V600``, ``V600E``, ``p.R175H``, ``600``, ``X327_splice`` -> the residue position.
 _RESIDUE = re.compile(r"^(?:p\.)?[A-Za-z*]?(\d{1,5})(?:[A-Za-z*]+|_splice|fs\*?\d*)?$")
 
@@ -113,9 +119,16 @@ def check_args(residue: str | None, assembly: str) -> int | None:
     return position
 
 
-def answer(gene: str, residue: str | None, position: int | None, assembly: str) -> dict[str, Any]:
+def answer(
+    gene: str, residue: str | None, position: int | None, assembly: str, mode: str = "compact"
+) -> dict[str, Any]:
     """The get_mutation_hotspots payload for a resolved gene symbol."""
     rows = lookup(gene, assembly, position)
+    if mode in ("minimal", "compact"):  # the per-tumour-type breakdown is the bulk
+        rows = [{k: v for k, v in r.items() if k != "tumor_types"} for r in rows]
+    letter = None if residue is None else variant_letter(residue)
+    if letter is not None:  # indel/splice regions say nothing about one substitution
+        rows = [r for r in rows if r["type"] in ("single_residue", "3d")]
     payload: dict[str, Any] = {
         "gene": gene,
         "assembly": assembly,
@@ -124,12 +137,13 @@ def answer(gene: str, residue: str | None, position: int | None, assembly: str) 
     }
     if residue is not None:
         payload["residue"] = residue.strip()
-        payload["is_hotspot"] = bool(rows)
-        letter = variant_letter(residue)
+        payload["residue_is_hotspot"] = payload["is_hotspot"] = bool(rows)
         if letter is not None:
-            payload["variant_tumor_count"] = max(
-                (r["variants"].get(letter, 0) for r in rows), default=0
-            )
+            count = max((r["variants"].get(letter, 0) for r in rows), default=0)
+            payload["variant_tumor_count"] = count
+            # A change never seen at a hotspot residue is not itself a hotspot change.
+            payload["is_hotspot"] = count > 0
+        payload["note"] = NOTE
     prov = provenance()
     payload["source"] = {
         "licence": prov["license"],

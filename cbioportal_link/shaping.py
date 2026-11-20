@@ -72,6 +72,24 @@ def assembly(raw: dict[str, Any]) -> str:
     return ASSEMBLY.get(ref.lower(), ref or "unknown")
 
 
+def study_text(raw: dict[str, Any]) -> str:
+    """ID, name and citation of a study as one casefolded string for keyword search."""
+    text = " ".join(str(raw.get(k) or "") for k in ("studyId", "name", "citation"))
+    return text.replace("_", " ").casefold()
+
+
+def pmid_list(raw: Any) -> list[str]:
+    """A study's comma-joined ``pmid`` as a de-duplicated list (upstream repeats some)."""
+    return [p for p in dict.fromkeys(str(raw or "").split(",")) if p]
+
+
+def pmid_fields(raw: Any) -> dict[str, Any]:
+    """The study's first (primary) PMID, plus how many more it lists (get_study has all)."""
+    pmids = pmid_list(raw)
+    more = {"more_pmids": len(pmids) - 1} if len(pmids) > 1 else {}
+    return {"pmid": pmids[0] if pmids else None, **more}
+
+
 def study_ref(raw: dict[str, Any]) -> dict[str, Any]:
     """The per-row provenance every answer carries: who, licence, citation, import date."""
     code, restricted = licence(raw.get("description"))
@@ -81,7 +99,7 @@ def study_ref(raw: dict[str, Any]) -> dict[str, Any]:
         "licence": code,
         "restricted": restricted,
         "citation": raw.get("citation"),
-        "pmid": raw.get("pmid"),
+        **pmid_fields(raw.get("pmid")),
         "import_date": str(raw.get("importDate") or "")[:10] or None,
     }
 
@@ -152,9 +170,37 @@ def ratio(numerator: int, denominator: int) -> float | None:
     return round(numerator / denominator, 4) if denominator else None
 
 
-def normalize_protein_change(value: str) -> str:
-    """``p.G12C`` / ``g12c`` -> ``G12C`` (cBioPortal's one-letter form)."""
+_AA3 = dict(  # three-letter amino-acid code -> one letter
+    zip(
+        re.findall("...", "alaargasnaspcysglngluglyhisileleulysmetpheproserthrtrptyrvalter"),
+        "ARNDCQEGHILKMFPSTWYV*",
+        strict=True,
+    )
+)
+_ALT = {**_AA3, "del": "del", "dup": "dup"}
+_THREE_LETTER = re.compile(r"^(?:p\.)?([A-Za-z]{3}|[A-Za-z])(\d{1,5})([A-Za-z]{3}|\*)?$")
+
+
+def one_letter(value: str) -> str | None:
+    """``p.Gly12Cys`` / ``G12Cys`` -> ``G12C``; ``None`` if a three-letter code is unknown.
+
+    Anything not shaped like a protein change is returned stripped, unchanged.
+    """
     text = value.strip()
+    m = _THREE_LETTER.match(text)
+    if not m:
+        return text
+    ref, pos, alt = m.groups()
+    ref1 = ref.upper() if len(ref) == 1 else _AA3.get(ref.lower())
+    alt1 = alt if alt in (None, "*") else _ALT.get(alt.lower())
+    if ref1 is None or (alt is not None and alt1 is None):
+        return None
+    return f"{ref1}{pos}{alt1 or ''}"
+
+
+def normalize_protein_change(value: str) -> str:
+    """``p.G12C`` / ``g12c`` / ``p.Gly12Cys`` -> ``G12C`` (cBioPortal's one-letter form)."""
+    text = one_letter(value) or value.strip()
     if text[:2].lower() == "p.":
         text = text[2:]
     return text.upper()

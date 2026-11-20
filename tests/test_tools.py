@@ -110,8 +110,11 @@ async def test_descriptions_name_only_returned_fields(facade: Any, call_tool: An
         "assembly",
     } <= set(studies["studies"][0])
     assert "restricted_excluded" in studies
-    study = (await call_tool(facade, "get_study", {"study_id": "msk_chord_2024"}))["study"]
+    chord = await call_tool(facade, "get_study", {"study_id": "msk_chord_2024"})
+    study = chord["study"]
     assert {"licence", "restricted", "description", "molecular_profiles"} <= set(study)
+    # the suggested follow-up for a restricted study must not fail on the licence gate
+    assert chord["_meta"]["next_commands"][0]["arguments"]["include_restricted"] is True
     muts = await call_tool(
         facade, "get_gene_mutations", {"gene": "BRAF", "study_id": "skcm_tcga_pan_can_atlas_2018"}
     )
@@ -121,6 +124,73 @@ async def test_descriptions_name_only_returned_fields(facade: Any, call_tool: An
     assert {"assembly", "mutated_samples", "study"} <= set(muts)
     types = await call_tool(facade, "list_cancer_types", {"query": "melanoma"})
     assert {"code", "name", "parent"} <= set(types["cancer_types"][0])
-    hot = await call_tool(facade, "get_mutation_hotspots", {"gene": "BRAF", "residue": "V600E"})
+    hot = await call_tool(
+        facade,
+        "get_mutation_hotspots",
+        {"gene": "BRAF", "residue": "V600E", "response_mode": "standard"},
+    )
     assert {"residue", "type", "tumor_count", "variants", "tumor_types"} <= set(hot["hotspots"][0])
     assert {"is_hotspot", "variant_tumor_count"} <= set(hot)
+
+
+async def test_restricted_study_error_offers_the_opt_in_retry(facade: Any) -> None:
+    args = {"gene": "KRAS", "study_ids": ["msk_chord_2024"], "protein_change": "G12C"}
+    res = await _raw(facade, "get_gene_alteration_frequency", args)
+    assert res.is_error is True
+    assert res.structured_content["_meta"]["next_commands"] == [
+        {
+            "tool": "get_gene_alteration_frequency",
+            "arguments": {**args, "include_restricted": True},
+        }
+    ]
+
+
+async def test_both_selectors_error_offers_each_selector(facade: Any) -> None:
+    args = {"gene": "KRAS", "study_ids": ["luad_tcga_pan_can_atlas_2018"], "cancer_type": "luad"}
+    res = await _raw(facade, "get_gene_alteration_frequency", args)
+    assert res.is_error is True
+    tool = "get_gene_alteration_frequency"
+    assert res.structured_content["_meta"]["next_commands"] == [
+        {"tool": tool, "arguments": {"gene": "KRAS", "study_ids": args["study_ids"]}},
+        {"tool": tool, "arguments": {"gene": "KRAS", "cancer_type": "luad"}},
+    ]
+
+
+async def test_three_letter_protein_change_is_accepted(facade: Any, call_tool: Any) -> None:
+    out = await call_tool(
+        facade,
+        "get_gene_alteration_frequency",
+        {
+            "gene": "KRAS",
+            "study_ids": ["luad_tcga_pan_can_atlas_2018"],
+            "protein_change": "p.Gly12Cys",
+        },
+    )
+    assert out["studies"][0]["protein_change"]["value"] == "G12C"
+    for residue in ("Arg175His", "R175His"):  # mixed notation is converted too
+        hot = await call_tool(facade, "get_mutation_hotspots", {"gene": "TP53", "residue": residue})
+        assert hot["is_hotspot"] is True and hot["variant_tumor_count"] == 386
+
+
+async def test_unknown_gene_hint_says_the_resolver_lives_on_the_router(facade: Any) -> None:
+    for gene in ("KRASX", "ENSG00000133703"):
+        res = await _raw(facade, "get_gene_alteration_frequency", {"gene": gene})
+        assert "genefoundry router" in res.structured_content["hint"]
+
+
+async def test_unknown_three_letter_code_is_an_error_not_zero(facade: Any) -> None:
+    for change in ("Xyz12Cys", "Gly12Xyz", "G12Xyz"):
+        res = await _raw(
+            facade,
+            "get_gene_alteration_frequency",
+            {
+                "gene": "KRAS",
+                "study_ids": ["luad_tcga_pan_can_atlas_2018"],
+                "protein_change": change,
+            },
+        )
+        body = res.structured_content
+        assert res.is_error is True and body["field"] == "protein_change"
+        assert '"G12C"' in body["message"]
+    hot = await _raw(facade, "get_mutation_hotspots", {"gene": "EGFR", "residue": "L858Xyz"})
+    assert hot.is_error is True and hot.structured_content["field"] == "residue"

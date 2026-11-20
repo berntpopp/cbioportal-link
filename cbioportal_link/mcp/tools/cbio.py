@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args
 
-from pydantic import Field, StrictBool, StrictInt
+from pydantic import AfterValidator, Field, StrictBool, StrictInt
 
 from cbioportal_link.mcp.annotations import READ_ONLY_OPEN_WORLD
 from cbioportal_link.mcp.envelope import McpErrorContext, ToolReturn, run_mcp_tool
@@ -17,7 +18,7 @@ from cbioportal_link.service import (
     MAX_POSITIONS,
     MAX_STUDIES,
 )
-from cbioportal_link.shaping import MAX_LIMIT, RESPONSE_MODES
+from cbioportal_link.shaping import MAX_LIMIT, RESPONSE_MODES, one_letter
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
@@ -47,9 +48,36 @@ OptCancerType = Annotated[
         "subtypes are included. Find codes with list_cancer_types."
     ),
 ]
+
+
+def _known_codes(value: str) -> str:
+    """Convert three-letter amino-acid codes; reject an unknown one (never a silent zero)."""
+    out = one_letter(value)
+    if out is None:
+        raise ValueError("use one-letter (G12C) or three-letter (p.Gly12Cys) amino-acid codes")
+    return out
+
+
+def _one_letter_change(value: str) -> str:
+    """Convert a three-letter change; reject anything not in one-letter form afterwards."""
+    out = _known_codes(value)
+    if not re.fullmatch(r"(?:[pP]\.)?[A-Za-z*]\d{1,5}[A-Za-z0-9_*>]{0,30}", out):
+        raise ValueError("use one-letter (G12C) or three-letter (p.Gly12Cys) amino-acid codes")
+    return out
+
+
 OptProteinChange = Annotated[
-    Annotated[str, Field(pattern=r"^(?:[pP]\.)?[A-Za-z*]\d{1,5}[A-Za-z0-9_*>]{0,30}$")] | None,
-    Field(description="One-letter protein change, e.g. V600E or G12C (p. prefix optional)."),
+    Annotated[
+        str,
+        Field(pattern=r"^(?:[pP]\.)?[A-Za-z*]{1,3}\d{1,5}[A-Za-z0-9_*>]{0,30}$"),
+        AfterValidator(_one_letter_change),
+    ]
+    | None,
+    Field(
+        description="Protein change, e.g. V600E or G12C (p. prefix optional; three-letter "
+        "p.Gly12Cys is converted).",
+        examples=["G12C"],
+    ),
 ]
 IncludeRestricted = Annotated[
     StrictBool,
@@ -223,8 +251,8 @@ def register_cbio_tools(mcp: FastMCP) -> None:
         tags={"studies"},
         description=(
             "Get one cBioPortal study: licence, restricted flag, citation, pmid, "
-            "import_date, cancer type, sample counts, assembly, the fenced description and "
-            "its molecular profiles (IDs and types only; no data matrices). An unknown ID is "
+            "import_date, cancer type, sample counts, assembly, the fenced description, every "
+            "PMID (pmids) and its molecular profile IDs (no data matrices). An unknown ID is "
             "not_found. Signature: get_study(study_id)."
         ),
     )
@@ -238,6 +266,7 @@ def register_cbio_tools(mcp: FastMCP) -> None:
                     "get_gene_alteration_frequency",
                     gene="TP53",
                     study_ids=[p["study"]["study_id"]],
+                    **({"include_restricted": True} if p["study"]["restricted"] else {}),
                 )
             ],
         )
@@ -372,27 +401,37 @@ def register_cbio_tools(mcp: FastMCP) -> None:
         description=(
             "Get Cancer Hotspots calls for a gene (bundled v2 + 3D snapshot, ODbL 1.0): "
             "residue, type (single_residue, in_frame_indel, splice_site, 3d), tumor_count, "
-            "q_value (3d: p_value, clusters), variants and tumor_types per residue. With "
-            "residue (V600, V600E, R175H) it answers is_hotspot and, for a change, "
-            "variant_tumor_count. Residues follow the assembly's transcript (default GRCh38). "
-            "Signature: get_mutation_hotspots(gene, residue=, assembly=)."
+            "q_value (3d: p_value, clusters), variants (+ tumor_types in standard mode). With "
+            "residue (V600, V600E, R175H) it answers residue_is_hotspot and is_hotspot (for "
+            "a change: variant_tumor_count, its largest count over the calls, is > 0); not a hotspot "
+            "does not mean benign. Residues follow the assembly's transcript (default GRCh38). "
+            "Signature: get_mutation_hotspots(gene, residue=, assembly=, response_mode=)."
         ),
     )
     async def get_mutation_hotspots(
         gene: Gene,
         residue: Annotated[
-            str | None,
+            Annotated[str, AfterValidator(_known_codes)] | None,
             Field(min_length=1, max_length=40, description="Residue or change: V600 or V600E."),
         ] = None,
         assembly: Annotated[
             Literal["GRCh38", "GRCh37"],
             Field(description="Build whose transcript numbers the residues (default GRCh38)."),
         ] = "GRCh38",
+        response_mode: Annotated[
+            ResponseModeValue,
+            Field(
+                description="minimal/compact (default): calls without the per-tumour-type "
+                "breakdown | standard/full: + tumor_types per call."
+            ),
+        ] = "compact",
     ) -> ToolReturn:
-        args = _args(gene=gene, residue=residue)
+        args = _args(gene=gene, residue=residue, response_mode=response_mode)
         return await _run(
             "get_mutation_hotspots",
             args,
-            lambda: get_cbio_service().get_mutation_hotspots(gene, residue, assembly),
+            lambda: get_cbio_service().get_mutation_hotspots(
+                gene, residue, assembly, response_mode
+            ),
             lambda p: [cmd("get_gene_alteration_frequency", gene=p["gene"])],
         )

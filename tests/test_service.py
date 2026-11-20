@@ -46,7 +46,7 @@ async def test_cancer_type_includes_subtypes(cbio_service: CbioService) -> None:
 async def test_get_study_fences_description_and_lists_profiles(cbio_service: CbioService) -> None:
     study = (await cbio_service.get_study("msk_chord_2024"))["study"]
     assert study["restricted"] is True and study["description"]["kind"] == "untrusted_text"
-    assert {"id", "type", "datatype"} <= set(study["molecular_profiles"][0])
+    assert "msk_chord_2024_mutations" in study["molecular_profiles"]
     with pytest.raises(NotFoundError) as err:
         await cbio_service.get_study("NOPE_xyz")
     assert err.value.extra["field"] == "study_id"
@@ -144,6 +144,11 @@ async def test_list_cancer_types_by_parent_and_name(cbio_service: CbioService) -
     assert {"mel", "skcm"} <= {t["code"] for t in mel["cancer_types"]}
 
 
+async def test_exact_cancer_type_name_ranks_first(cbio_service: CbioService) -> None:
+    out = await cbio_service.list_cancer_types("Lung Adenocarcinoma", None, 100, 0)
+    assert [t["code"] for t in out["cancer_types"]][:2] == ["luad", "lais"]
+
+
 async def test_hotspots_braf_v600_and_tp53_r175h(cbio_service: CbioService) -> None:
     braf = await cbio_service.get_mutation_hotspots("BRAF", "V600", "GRCh37")
     single = next(r for r in braf["hotspots"] if r["type"] == "single_residue")
@@ -155,6 +160,26 @@ async def test_hotspots_braf_v600_and_tp53_r175h(cbio_service: CbioService) -> N
     assert tp53["data_version"].startswith("Cancer Hotspots v2 + 3D snapshot")
     cold = await cbio_service.get_mutation_hotspots("TP53", "A1", "GRCh38")
     assert cold["is_hotspot"] is False and cold["total"] == 0
+    assert "not mean benign" in cold["note"]
+
+
+async def test_unobserved_change_at_hotspot_residue_is_not_a_hotspot(
+    cbio_service: CbioService,
+) -> None:
+    # KRAS G12 is a hotspot residue, but G12W was never seen there.
+    out = await cbio_service.get_mutation_hotspots("KRAS", "G12W", "GRCh38")
+    assert out["is_hotspot"] is False and out["residue_is_hotspot"] is True
+    assert out["variant_tumor_count"] == 0
+    seen = await cbio_service.get_mutation_hotspots("KRAS", "G12C", "GRCh38")
+    assert seen["is_hotspot"] is True and seen["residue_is_hotspot"] is True
+
+
+async def test_a_substitution_gets_only_residue_calls(cbio_service: CbioService) -> None:
+    # BRAF's 592-604 in-frame-indel region covers V600 but says nothing about V600E.
+    region = await cbio_service.get_mutation_hotspots("BRAF", "V600", "GRCh38")
+    assert "in_frame_indel" in {r["type"] for r in region["hotspots"]}
+    change = await cbio_service.get_mutation_hotspots("BRAF", "V600E", "GRCh38")
+    assert {r["type"] for r in change["hotspots"]} == {"single_residue", "3d"}
 
 
 async def test_no_code_path_reaches_row_level_endpoints() -> None:
@@ -210,3 +235,48 @@ def test_licence_parser_reads_every_description_form(
     from cbioportal_link.shaping import licence
 
     assert licence(description) == expected
+
+
+async def test_study_pmids_are_deduplicated(cbio_service: CbioService) -> None:
+    out = await cbio_service.get_study("luad_tcga_pan_can_atlas_2018")
+    pmids = out["study"]["pmids"]
+    assert pmids[0] == "29625048" and len(pmids) == len(set(pmids)) == 11
+    assert out["study"]["pmid"] == "29625048" and out["study"]["more_pmids"] == 10
+    assert all(isinstance(p, str) for p in out["study"]["molecular_profiles"])
+
+
+async def test_search_matches_words_in_any_order(cbio_service: CbioService) -> None:
+    out = await cbio_service.search_studies("luad pan can atlas", None, False, 20, 0)
+    assert [s["study_id"] for s in out["studies"]] == ["luad_tcga_pan_can_atlas_2018"]
+
+
+async def test_guessed_study_id_offers_the_close_match(cbio_service: CbioService) -> None:
+    with pytest.raises(NotFoundError) as err:
+        await cbio_service.get_study("luad_tcga_pan_can_atlas_2019")
+    assert err.value.extra["candidates"] == ["luad_tcga_pan_can_atlas_2018"]
+    assert err.value.extra["next_commands"] == [
+        {"tool": "get_study", "arguments": {"study_id": "luad_tcga_pan_can_atlas_2018"}}
+    ]
+
+
+async def test_frequency_rows_carry_assembly_and_default_is_flagged(
+    cbio_service: CbioService,
+) -> None:
+    out = await cbio_service.get_gene_alteration_frequency(
+        "KRAS", ["luad_tcga_pan_can_atlas_2018"], None, None, False
+    )
+    assert out["studies"][0]["assembly"] == "GRCh37" and "warning" not in out
+    default = await cbio_service.get_gene_alteration_frequency("TP53", None, None, None, False)
+    assert "msk_impact_2017" in default["warning"]
+
+
+async def test_hotspot_tumor_types_only_in_standard_mode(cbio_service: CbioService) -> None:
+    lean = await cbio_service.get_mutation_hotspots("KRAS", "G12C", "GRCh38")
+    assert all("tumor_types" not in r for r in lean["hotspots"])
+    full = await cbio_service.get_mutation_hotspots("KRAS", "G12C", "GRCh38", "standard")
+    assert all(r["tumor_types"] for r in full["hotspots"])
+
+
+async def test_get_study_says_what_is_never_exposed(cbio_service: CbioService) -> None:
+    out = await cbio_service.get_study("luad_tcga_pan_can_atlas_2018")
+    assert "clinical data" in out["not_exposed"] and "url" in out["not_exposed"]

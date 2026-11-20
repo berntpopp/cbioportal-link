@@ -233,6 +233,9 @@ def _error_envelope(exc: BaseException, context: McpErrorContext) -> dict[str, A
 
     if isinstance(extra.get("next_commands"), list) and extra["next_commands"]:
         envelope["_meta"]["next_commands"] = extra["next_commands"]
+    elif isinstance(extra.get("retry_with"), dict):  # the same call with these overrides
+        retry = {**context.arguments, **extra["retry_with"]}
+        envelope["_meta"]["next_commands"] = [cmd(context.tool_name, **retry)]
     elif context.fallback is not None:
         envelope["_meta"]["next_commands"] = [context.fallback]
     else:
