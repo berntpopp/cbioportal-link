@@ -1,0 +1,24 @@
+{
+  "dataset": "Cancer Hotspots v2 + 3D hotspots (cancerhotspots.org, 3dhotspots.org)",
+  "license": "ODbL-1.0 (https://opendatacommons.org/licenses/odbl/1.0/)",
+  "license_source": "cBioPortal/cancerhotspots@b257eeaf (data licence statement)",
+  "attribution": "Cancer Hotspots, Memorial Sloan Kettering Cancer Center (cancerhotspots.org); Chang et al. 2016 PMID 26619011, Chang et al. 2018 PMID 29247016, Gao et al. 2017 PMID 28115009",
+  "source_repo": "genome-nexus/genome-nexus-importer",
+  "source_commit": "4c2d0525d1f5686246ecb159cb8ad9c1962f28b4",
+  "files": {
+    "GRCh37": {
+      "source_path": "data/grch37_ensembl111/export/hotspots_v2_v3_and_3d.txt",
+      "source_sha256": "2714e4afa867fa26cf962de9e4998d2aff9bbab62965390abdc53498b88784b5",
+      "derived_file": "hotspots_grch37.tsv",
+      "derived_sha256": "fd751a2118897e11fada2d7a56fc7fe01c5677645d74779fda0ee5c5e02fdcd9",
+      "rows": 4447
+    },
+    "GRCh38": {
+      "source_path": "data/grch38_ensembl111/export/hotspots_v2_v3_and_3d.txt",
+      "source_sha256": "52df828e21d694fc46168b26d5767e23f8b45e6a78a27c9291d810301fed2790",
+      "derived_file": "hotspots_grch38.tsv",
+      "derived_sha256": "cfe6bafdf8ae1180f04fd3b6dbe1ed4e02eb008b1fc96d571cebae6b3cc52e40",
+      "rows": 4444
+    }
+  }
+}
