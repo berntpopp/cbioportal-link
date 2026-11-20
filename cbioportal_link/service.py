@@ -462,15 +462,20 @@ class CbioService:
         if parent is not None:
             codes = await self._descendants(parent)
             types = [t for t in types if t.get("cancerTypeId") in codes - {parent.lower()}]
+        term = (query or "").strip().casefold()
         if query is not None:
-            term = query.strip().casefold()
             types = [
                 t
                 for t in types
                 if term in str(t.get("name") or "").casefold()
                 or term == str(t.get("cancerTypeId") or "").casefold()
             ]
-        types.sort(key=lambda t: str(t.get("cancerTypeId")))
+        types.sort(
+            key=lambda t: (
+                term not in {str(t.get(k) or "").casefold() for k in ("name", "cancerTypeId")},
+                str(t.get("cancerTypeId")),
+            )
+        )
         rows = [
             {"code": t.get("cancerTypeId"), "name": t.get("name"), "parent": t.get("parent")}
             for t in types[offset : offset + limit]

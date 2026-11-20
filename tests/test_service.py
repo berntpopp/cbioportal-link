@@ -144,6 +144,11 @@ async def test_list_cancer_types_by_parent_and_name(cbio_service: CbioService) -
     assert {"mel", "skcm"} <= {t["code"] for t in mel["cancer_types"]}
 
 
+async def test_exact_cancer_type_name_ranks_first(cbio_service: CbioService) -> None:
+    out = await cbio_service.list_cancer_types("Lung Adenocarcinoma", None, 100, 0)
+    assert [t["code"] for t in out["cancer_types"]][:2] == ["luad", "lais"]
+
+
 async def test_hotspots_braf_v600_and_tp53_r175h(cbio_service: CbioService) -> None:
     braf = await cbio_service.get_mutation_hotspots("BRAF", "V600", "GRCh37")
     single = next(r for r in braf["hotspots"] if r["type"] == "single_residue")
