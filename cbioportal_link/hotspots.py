@@ -18,13 +18,13 @@ from cbioportal_link.exceptions import InvalidInputError
 
 DATA = Path(__file__).parent / "data"
 ASSEMBLIES = ("GRCh38", "GRCh37")
-#: ``V600``, ``V600E``, ``p.R175H``, ``600``, ``X327_splice`` -> the residue position.
 NOTE = (
     "is_hotspot: this change (or residue, if no change given) is a statistically recurrent "
     "somatic hotspot in the snapshot; residue_is_hotspot: its residue is. Not a hotspot does "
     "not mean benign, non-pathogenic or non-oncogenic (hotspots count somatic calls only, so "
     "germline polymorphisms never appear), and a hotspot is not a clinical actionability call."
 )
+#: ``V600``, ``V600E``, ``p.R175H``, ``600``, ``X327_splice`` -> the residue position.
 _RESIDUE = re.compile(r"^(?:p\.)?[A-Za-z*]?(\d{1,5})(?:[A-Za-z*]+|_splice|fs\*?\d*)?$")
 
 

@@ -172,3 +172,19 @@ async def test_unknown_gene_hint_says_the_resolver_lives_on_the_router(facade: A
     res = await _raw(facade, "get_gene_alteration_frequency", {"gene": "KRASX"})
     body = res.structured_content
     assert body["error_code"] == "not_found" and "genefoundry router" in body["hint"]
+
+
+async def test_unknown_three_letter_code_is_an_error_not_zero(facade: Any) -> None:
+    for change in ("Xyz12Cys", "Gly12Xyz"):
+        res = await _raw(
+            facade,
+            "get_gene_alteration_frequency",
+            {
+                "gene": "KRAS",
+                "study_ids": ["luad_tcga_pan_can_atlas_2018"],
+                "protein_change": change,
+            },
+        )
+        body = res.structured_content
+        assert res.is_error is True and body["field"] == "protein_change"
+        assert '"G12C"' in body["message"]

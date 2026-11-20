@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args
 
-from pydantic import Field, StrictBool, StrictInt
+from pydantic import AfterValidator, Field, StrictBool, StrictInt
 
 from cbioportal_link.mcp.annotations import READ_ONLY_OPEN_WORLD
 from cbioportal_link.mcp.envelope import McpErrorContext, ToolReturn, run_mcp_tool
@@ -47,11 +48,27 @@ OptCancerType = Annotated[
         "subtypes are included. Find codes with list_cancer_types."
     ),
 ]
+
+
+def _one_letter_change(value: str) -> str:
+    """Convert a three-letter change; reject anything not in one-letter form afterwards."""
+    out = one_letter(value)
+    if not re.fullmatch(r"(?:[pP]\.)?[A-Za-z*]\d{1,5}[A-Za-z0-9_*>]{0,30}", out):
+        raise ValueError("use one-letter (G12C) or three-letter (p.Gly12Cys) amino-acid codes")
+    return out
+
+
 OptProteinChange = Annotated[
-    Annotated[str, Field(pattern=r"^(?:[pP]\.)?[A-Za-z*]{1,3}\d{1,5}[A-Za-z0-9_*>]{0,30}$")] | None,
+    Annotated[
+        str,
+        Field(pattern=r"^(?:[pP]\.)?[A-Za-z*]{1,3}\d{1,5}[A-Za-z0-9_*>]{0,30}$"),
+        AfterValidator(_one_letter_change),
+    ]
+    | None,
     Field(
         description="Protein change, e.g. V600E or G12C (p. prefix optional; three-letter "
-        "p.Gly12Cys is converted)."
+        "p.Gly12Cys is converted).",
+        examples=["G12C"],
     ),
 ]
 IncludeRestricted = Annotated[
