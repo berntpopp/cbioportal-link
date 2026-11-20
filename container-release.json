@@ -20,15 +20,15 @@
   "data": {
     "mode": "none",
     "image_allowlist": [
-      "home/app/web/cbioportal_link/data/hotspots_grch37.tsv",
-      "home/app/web/cbioportal_link/data/hotspots_grch38.tsv",
+      "home/app/web/cbioportal_link/data/hotspots_grch37.txt",
+      "home/app/web/cbioportal_link/data/hotspots_grch38.txt",
       "home/app/web/cbioportal_link/data/hotspots_provenance.json",
       "opt/venv/lib/python3.14/site-packages/beartype/_check/cls/hint/data/__init__.py",
       "opt/venv/lib/python3.14/site-packages/beartype/_check/cls/hint/data/hintdataabc.py",
       "opt/venv/lib/python3.14/site-packages/beartype/_check/cls/hint/data/hintdatacode.py",
       "opt/venv/lib/python3.14/site-packages/beartype/_check/cls/hint/data/hintdataerror.py",
-      "opt/venv/lib/python3.14/site-packages/cbioportal_link/data/hotspots_grch37.tsv",
-      "opt/venv/lib/python3.14/site-packages/cbioportal_link/data/hotspots_grch38.tsv",
+      "opt/venv/lib/python3.14/site-packages/cbioportal_link/data/hotspots_grch37.txt",
+      "opt/venv/lib/python3.14/site-packages/cbioportal_link/data/hotspots_grch38.txt",
       "opt/venv/lib/python3.14/site-packages/cbioportal_link/data/hotspots_provenance.json"
     ]
   },

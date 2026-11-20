@@ -24,7 +24,7 @@ and each study's own publication.
 
 Cancer Hotspots data (bundled)
 ------------------------------
-cbioportal_link/data/hotspots_grch37.tsv and hotspots_grch38.tsv are derived from Cancer
+cbioportal_link/data/hotspots_grch37.txt and hotspots_grch38.txt are derived from Cancer
 Hotspots (https://www.cancerhotspots.org, https://www.3dhotspots.org), Memorial Sloan
 Kettering Cancer Center. The data are licensed under the ODC Open Database License
 (ODbL 1.0) as stated by cancerhotspots.org (cBioPortal/cancerhotspots commit b257eeaf).

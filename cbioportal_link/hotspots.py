@@ -53,7 +53,7 @@ def _float(raw: str) -> float | None:
 def table(assembly: str) -> dict[str, list[dict[str, Any]]]:
     """Hotspot rows of one build, grouped by gene symbol."""
     genes: dict[str, list[dict[str, Any]]] = {}
-    with (DATA / f"hotspots_{assembly.lower()}.tsv").open(newline="") as fh:
+    with (DATA / f"hotspots_{assembly.lower()}.txt").open(newline="") as fh:
         for raw in csv.DictReader(fh, delimiter="\t"):
             row: dict[str, Any] = {
                 "residue": raw["residue"],

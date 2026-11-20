@@ -60,6 +60,6 @@ Plus the fleet `get_server_capabilities` and `get_diagnostics`.
 `scripts/build_hotspots.py` downloads `hotspots_v2_v3_and_3d.txt` (GRCh37 + GRCh38 builds) from
 `genome-nexus/genome-nexus-importer@4c2d0525`, verifies sha256, keeps v2 single-residue /
 in-frame-indel / splice-site hotspots and 3D hotspots (clusters collapsed per residue), and
-writes `cbioportal_link/data/hotspots_{grch37,grch38}.tsv` + `hotspots_provenance.json`.
+writes `cbioportal_link/data/hotspots_{grch37,grch38}.txt` + `hotspots_provenance.json`.
 Data ODbL 1.0 (cancerhotspots.org; `cBioPortal/cancerhotspots@b257eeaf`); no AGPL code is
 used. Acceptance: BRAF V600 tumour count 897; TP53 R175H is a hotspot.

@@ -6,7 +6,7 @@ at a pinned commit, sha256-verified. That file combines the cancerhotspots.org d
 in-frame-indel and splice-site hotspots plus the 3D hotspots (one row per residue, clusters
 collapsed); v3 rows are dropped. No cancerhotspots code (AGPL) is used.
 
-    uv run python scripts/build_hotspots.py   # rewrites cbioportal_link/data/hotspots_*.tsv
+    uv run python scripts/build_hotspots.py   # rewrites cbioportal_link/data/hotspots_*.txt
 """
 
 from __future__ import annotations
@@ -94,7 +94,7 @@ def main() -> int:
         if hashlib.sha256(data).hexdigest() != sha:
             raise SystemExit(f"sha256 mismatch for {path}")
         rows = derive(data.decode())
-        target = OUT / f"hotspots_{assembly.lower()}.tsv"
+        target = OUT / f"hotspots_{assembly.lower()}.txt"
         with target.open("w", newline="") as fh:
             writer = csv.DictWriter(fh, COLUMNS, delimiter="\t", lineterminator="\n")
             writer.writeheader()
