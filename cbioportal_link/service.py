@@ -28,6 +28,7 @@ from cbioportal_link.shaping import (
     normalize_protein_change,
     page_args,
     page_block,
+    pmid_list,
     ratio,
     rows_of,
     study_ref,
@@ -240,14 +241,8 @@ class CbioService:
         )
         study = study_row(raw, "standard")
         study["description"] = fence(raw.get("description"), sid)
-        study["molecular_profiles"] = [
-            {
-                "id": p.get("molecularProfileId"),
-                "type": p.get("molecularAlterationType"),
-                "datatype": p.get("datatype"),
-            }
-            for p in profiles
-        ]
+        study["pmids"] = pmid_list(raw.get("pmid"))
+        study["molecular_profiles"] = [p.get("molecularProfileId") for p in profiles]
         return await self._stamp({"study": study, "not_exposed": NOT_EXPOSED})
 
     async def _select(

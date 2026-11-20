@@ -46,7 +46,7 @@ async def test_cancer_type_includes_subtypes(cbio_service: CbioService) -> None:
 async def test_get_study_fences_description_and_lists_profiles(cbio_service: CbioService) -> None:
     study = (await cbio_service.get_study("msk_chord_2024"))["study"]
     assert study["restricted"] is True and study["description"]["kind"] == "untrusted_text"
-    assert {"id", "type", "datatype"} <= set(study["molecular_profiles"][0])
+    assert "msk_chord_2024_mutations" in study["molecular_profiles"]
     with pytest.raises(NotFoundError) as err:
         await cbio_service.get_study("NOPE_xyz")
     assert err.value.extra["field"] == "study_id"
@@ -234,8 +234,10 @@ def test_licence_parser_reads_every_description_form(
 
 async def test_study_pmids_are_deduplicated(cbio_service: CbioService) -> None:
     out = await cbio_service.get_study("luad_tcga_pan_can_atlas_2018")
-    pmids = out["study"]["pmid"].split(",")
+    pmids = out["study"]["pmids"]
     assert pmids[0] == "29625048" and len(pmids) == len(set(pmids)) == 11
+    assert out["study"]["pmid"] == "29625048" and out["study"]["more_pmids"] == 10
+    assert all(isinstance(p, str) for p in out["study"]["molecular_profiles"])
 
 
 async def test_search_matches_words_in_any_order(cbio_service: CbioService) -> None:

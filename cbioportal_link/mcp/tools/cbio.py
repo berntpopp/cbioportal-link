@@ -226,8 +226,8 @@ def register_cbio_tools(mcp: FastMCP) -> None:
         tags={"studies"},
         description=(
             "Get one cBioPortal study: licence, restricted flag, citation, pmid, "
-            "import_date, cancer type, sample counts, assembly, the fenced description and "
-            "its molecular profiles (IDs and types only; no data matrices). An unknown ID is "
+            "import_date, cancer type, sample counts, assembly, the fenced description, every "
+            "PMID (pmids) and its molecular profile IDs (no data matrices). An unknown ID is "
             "not_found. Signature: get_study(study_id)."
         ),
     )

@@ -78,6 +78,18 @@ def study_text(raw: dict[str, Any]) -> str:
     return text.replace("_", " ").casefold()
 
 
+def pmid_list(raw: Any) -> list[str]:
+    """A study's comma-joined ``pmid`` as a de-duplicated list (upstream repeats some)."""
+    return [p for p in dict.fromkeys(str(raw or "").split(",")) if p]
+
+
+def pmid_fields(raw: Any) -> dict[str, Any]:
+    """The study's first (primary) PMID, plus how many more it lists (get_study has all)."""
+    pmids = pmid_list(raw)
+    more = {"more_pmids": len(pmids) - 1} if len(pmids) > 1 else {}
+    return {"pmid": pmids[0] if pmids else None, **more}
+
+
 def study_ref(raw: dict[str, Any]) -> dict[str, Any]:
     """The per-row provenance every answer carries: who, licence, citation, import date."""
     code, restricted = licence(raw.get("description"))
@@ -87,7 +99,7 @@ def study_ref(raw: dict[str, Any]) -> dict[str, Any]:
         "licence": code,
         "restricted": restricted,
         "citation": raw.get("citation"),
-        "pmid": ",".join(dict.fromkeys(str(raw["pmid"]).split(","))) if raw.get("pmid") else None,
+        **pmid_fields(raw.get("pmid")),
         "import_date": str(raw.get("importDate") or "")[:10] or None,
     }
 
