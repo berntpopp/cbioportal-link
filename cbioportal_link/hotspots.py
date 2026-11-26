@@ -151,4 +151,5 @@ def answer(
         "commit": prov["source_commit"],
     }
     payload["data_version"] = data_version()
+    payload["retrieved_at"] = prov["retrieved_at"]  # when the snapshot was downloaded
     return payload

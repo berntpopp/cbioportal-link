@@ -8,7 +8,8 @@ message.
 Every ``_meta`` (success AND error) carries ``tool``, ``request_id``, ``elapsed_ms``,
 ``source = "cbioportal"``, ``capabilities_version``, ``next_commands`` and
 ``unsafe_for_clinical_use = True`` (the fleet-standard research-use disclaimer).
-Data provenance (catalog data_version, retrieved_at, licence) is in the payload.
+Data tools add ``data_version`` and ``retrieved_at`` (Response-Envelope v1.2) and publish
+their payload under ``result``/``results``; see ``mcp/tools/cbio.py``.
 """
 
 from __future__ import annotations
@@ -305,6 +306,12 @@ def build_arg_error_envelope(
     }
 
 
+def as_result(payload: dict[str, Any], key: str) -> dict[str, Any]:
+    """Publish payload field ``key`` as ``result`` (object) or ``results`` (array), v1 §1."""
+    value = payload.pop(key)
+    return {"results" if isinstance(value, list) else "result": value, **payload}
+
+
 def _stamp_capabilities_version(meta: dict[str, Any]) -> None:
     """Add the cached capabilities_version to a ``_meta`` block when available."""
     version = _capabilities_version()
@@ -333,7 +340,8 @@ async def run_mcp_tool(
         if isinstance(result, dict):
             existing_meta: dict[str, Any] = result.pop("_meta", None) or {}
             success = bool(result.setdefault("success", True))
-            meta = {**existing_meta, **_new_meta(tool_name), "elapsed_ms": elapsed}
+            # a tool may name its own ``source`` (a different upstream than the backend's main one)
+            meta = {**_new_meta(tool_name), **existing_meta, "elapsed_ms": elapsed}
             _stamp_capabilities_version(meta)
             result["_meta"] = meta
             metrics.record(tool_name, elapsed, ok=success)

@@ -4,6 +4,36 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-11-26
+
+### Added
+
+- Response-Envelope Standard v1.2: every successful data result carries `_meta.source`,
+  `_meta.data_version` and `_meta.retrieved_at`. For the live API the version is the portal
+  and database version of `/api/info` and the time is the oldest upstream fetch behind the
+  result (a cache hit keeps the time of the fetch that filled its entry).
+  `get_mutation_hotspots` answers from the bundled snapshot and names it: source
+  `cancerhotspots`, the snapshot's version and the time it was downloaded.
+- `hotspots_provenance.json` records `retrieved_at`; `scripts/build_hotspots.py` writes it. For
+  the shipped snapshot the download time was not recorded, so it is the time the snapshot was
+  first committed.
+- Schema tests: every data tool result is validated against the vendored
+  `envelope-v1.2.schema.json` (genefoundry-envelope v1.2.0, sha256-pinned).
+
+### Changed
+
+- **Breaking:** the primary payload key is now `results` (lists) or `result` (`get_study`),
+  per Response-Envelope Standard v1 §1. It was `studies`, `study`, `variants`, `positions`,
+  `cancer_types` and `hotspots`.
+- **Breaking:** the top-level `retrieved_at` of `get_mutation_hotspots` is the snapshot's
+  download time, no longer the time of the call.
+- Re-vendored `tests/conformance/behaviour.py` from genefoundry-router (v1.2 provenance check).
+
+### Deprecated
+
+- The top-level `data_version` and `retrieved_at` of a data result. Read them from `_meta`;
+  the top-level copies will be removed in the next minor release.
+
 ## [0.2.0] - 2026-11-20
 
 Agent UX evaluation (`docs/benchmarks/`): five rounds with Claude Code and Antigravity (Codex in

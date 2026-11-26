@@ -108,10 +108,10 @@ async def test_descriptions_name_only_returned_fields(facade: Any, call_tool: An
         "import_date",
         "cancer_type",
         "assembly",
-    } <= set(studies["studies"][0])
+    } <= set(studies["results"][0])
     assert "restricted_excluded" in studies
     chord = await call_tool(facade, "get_study", {"study_id": "msk_chord_2024"})
-    study = chord["study"]
+    study = chord["result"]
     assert {"licence", "restricted", "description", "molecular_profiles"} <= set(study)
     # the suggested follow-up for a restricted study must not fail on the licence gate
     assert chord["_meta"]["next_commands"][0]["arguments"]["include_restricted"] is True
@@ -119,17 +119,17 @@ async def test_descriptions_name_only_returned_fields(facade: Any, call_tool: An
         facade, "get_gene_mutations", {"gene": "BRAF", "study_id": "skcm_tcga_pan_can_atlas_2018"}
     )
     assert {"protein_change", "samples", "mutation_type", "chr", "start", "ref", "alt"} <= set(
-        muts["variants"][0]
+        muts["results"][0]
     )
     assert {"assembly", "mutated_samples", "study"} <= set(muts)
     types = await call_tool(facade, "list_cancer_types", {"query": "melanoma"})
-    assert {"code", "name", "parent"} <= set(types["cancer_types"][0])
+    assert {"code", "name", "parent"} <= set(types["results"][0])
     hot = await call_tool(
         facade,
         "get_mutation_hotspots",
         {"gene": "BRAF", "residue": "V600E", "response_mode": "standard"},
     )
-    assert {"residue", "type", "tumor_count", "variants", "tumor_types"} <= set(hot["hotspots"][0])
+    assert {"residue", "type", "tumor_count", "variants", "tumor_types"} <= set(hot["results"][0])
     assert {"is_hotspot", "variant_tumor_count"} <= set(hot)
 
 
@@ -166,7 +166,7 @@ async def test_three_letter_protein_change_is_accepted(facade: Any, call_tool: A
             "protein_change": "p.Gly12Cys",
         },
     )
-    assert out["studies"][0]["protein_change"]["value"] == "G12C"
+    assert out["results"][0]["protein_change"]["value"] == "G12C"
     for residue in ("Arg175His", "R175His"):  # mixed notation is converted too
         hot = await call_tool(facade, "get_mutation_hotspots", {"gene": "TP53", "residue": residue})
         assert hot["is_hotspot"] is True and hot["variant_tumor_count"] == 386

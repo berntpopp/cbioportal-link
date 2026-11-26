@@ -18,6 +18,8 @@ import asyncio
 import json
 import time
 from collections import OrderedDict
+from contextvars import ContextVar
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -59,6 +61,18 @@ def _classify_400() -> Exception:
     )
 
 
+#: Epoch times of the upstream fetches behind the current tool call; a cache hit reports the
+#: fetch that filled its entry (Response-Envelope v1.2 ``retrieved_at``). The MCP plane resets it.
+FETCH_TIMES: ContextVar[list[float] | None] = ContextVar("cbio_fetch_times", default=None)
+
+
+def retrieved_at() -> str:
+    """UTC time (``Z``) of the oldest upstream fetch behind this call; now when untracked."""
+    times = FETCH_TIMES.get()
+    when = datetime.fromtimestamp(min(times), UTC) if times else datetime.now(UTC)
+    return when.isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
 class CbioClient:
     """Sequential, rate-limited, cached, origin-guarded JSON client for ``api.cbioportal.org``."""
 
@@ -79,10 +93,10 @@ class CbioClient:
             max_redirects=MAX_REDIRECTS,
             event_hooks={"request": [guard]},
         )
-        # key -> (expiry, value, raw body bytes); bounded by bytes, not entries (memory limit)
-        self._cache: OrderedDict[str, tuple[float, Any, int]] = OrderedDict()
+        # key -> (expiry, value, raw body bytes, epoch fetch time); bounded by bytes (memory limit)
+        self._cache: OrderedDict[str, tuple[float, Any, int, float]] = OrderedDict()
         self._cache_bytes = 0
-        self._inflight: dict[str, asyncio.Future[tuple[Any, int]]] = {}
+        self._inflight: dict[str, asyncio.Future[tuple[Any, int, float]]] = {}
         self._sequential = asyncio.Lock()  # llms.txt: one request in flight, never concurrent
         self.upstream_requests = 0
         self.cache_hits = 0
@@ -91,24 +105,26 @@ class CbioClient:
         """Close the underlying HTTP connection pool."""
         await self._http.aclose()
 
-    def _cache_get(self, key: str) -> Any:
+    def _cache_get(self, key: str) -> tuple[Any, int, float] | None:
         hit = self._cache.get(key)
         if hit is None or hit[0] < time.monotonic():
             self._cache_drop(key)
             return None
         self._cache.move_to_end(key)
         self.cache_hits += 1
-        return hit[1]
+        return hit[1:]
 
     def _cache_drop(self, key: str) -> None:
         old = self._cache.pop(key, None)
         if old is not None:
             self._cache_bytes -= old[2]
 
-    def _cache_put(self, key: str, value: Any, size: int = 0) -> None:
+    def _cache_put(
+        self, key: str, value: Any, size: int = 0, fetched_at: float | None = None
+    ) -> None:
         ttl = self.settings.info_ttl_s if key == INFO_PATH else self.settings.cache_ttl_s
         self._cache_drop(key)
-        self._cache[key] = (time.monotonic() + ttl, value, size)
+        self._cache[key] = (time.monotonic() + ttl, value, size, fetched_at or time.time())
         self._cache_bytes += size
         while self._cache and (
             len(self._cache) > self.settings.cache_maxsize
@@ -142,26 +158,29 @@ class CbioClient:
     async def _once(
         self, key: str, method: str, path: str, params: dict[str, Any] | None, body: Any
     ) -> Any:
-        cached = self._cache_get(key)
-        if cached is not None:
-            return cached
-        # Single-flight: parallel identical calls share one upstream request (politeness).
-        task = self._inflight.get(key)
-        if task is None:
-            task = self._inflight[key] = asyncio.ensure_future(
-                self._fetch(method, path, params, body)
-            )
-            task.add_done_callback(lambda done: self._settle(key, done))
-        return (await asyncio.shield(task))[0]
+        hit = self._cache_get(key)
+        if hit is None:
+            # Single-flight: parallel identical calls share one upstream request (politeness).
+            task = self._inflight.get(key)
+            if task is None:
+                task = self._inflight[key] = asyncio.ensure_future(
+                    self._fetch(method, path, params, body)
+                )
+                task.add_done_callback(lambda done: self._settle(key, done))
+            hit = await asyncio.shield(task)
+        times = FETCH_TIMES.get()
+        if times is not None:
+            times.append(hit[2])
+        return hit[0]
 
-    def _settle(self, key: str, task: asyncio.Future[tuple[Any, int]]) -> None:
+    def _settle(self, key: str, task: asyncio.Future[tuple[Any, int, float]]) -> None:
         self._inflight.pop(key, None)
         if not task.cancelled() and task.exception() is None:
             self._cache_put(key, *task.result())
 
     async def _fetch(
         self, method: str, path: str, params: dict[str, Any] | None, body: Any
-    ) -> tuple[Any, int]:
+    ) -> tuple[Any, int, float]:
         attempts = self.settings.max_retries + 1
         response: httpx.Response | None = None
         for attempt in range(attempts):
@@ -204,7 +223,7 @@ class CbioClient:
                 "The cBioPortal API returned an unexpected status.", retryable=False
             )
         try:
-            return response.json(), len(response.content)
+            return response.json(), len(response.content), time.time()
         except ValueError:
             raise UpstreamSchemaError(
                 "cBioPortal returned a non-JSON body.", field="response"
