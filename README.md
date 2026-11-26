@@ -91,7 +91,8 @@ get_mutation_hotspots(gene="TP53", residue="R175H")
 ## Data & provenance
 
 **Source.** The public cBioPortal web API, `https://api.cbioportal.org` (the host cBioPortal
-names for scripted access). No key. `data_version` is the portal and database version from
+names for scripted access). No key. Each data result states `source`, `data_version` and `retrieved_at` in `_meta`;
+`data_version` is the portal and database version from
 `/api/info`; each study row adds its `import_date`. Coordinates carry their `assembly`
 (most studies are GRCh37).
 

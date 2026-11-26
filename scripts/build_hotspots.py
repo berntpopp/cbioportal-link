@@ -17,6 +17,7 @@ import io
 import json
 import sys
 import urllib.request
+from datetime import UTC, datetime
 from pathlib import Path
 
 COMMIT = "4c2d0525d1f5686246ecb159cb8ad9c1962f28b4"
@@ -85,6 +86,7 @@ def main() -> int:
         "PMID 29247016, Gao et al. 2017 PMID 28115009",
         "source_repo": REPO,
         "source_commit": COMMIT,
+        "retrieved_at": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "files": {},
     }
     for assembly, (path, sha) in SOURCES.items():

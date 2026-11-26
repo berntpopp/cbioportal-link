@@ -5,6 +5,7 @@
   "attribution": "Cancer Hotspots, Memorial Sloan Kettering Cancer Center (cancerhotspots.org); Chang et al. 2016 PMID 26619011, Chang et al. 2018 PMID 29247016, Gao et al. 2017 PMID 28115009",
   "source_repo": "genome-nexus/genome-nexus-importer",
   "source_commit": "4c2d0525d1f5686246ecb159cb8ad9c1962f28b4",
+  "retrieved_at": "2026-11-20T11:12:26Z",
   "files": {
     "GRCh37": {
       "source_path": "data/grch37_ensembl111/export/hotspots_v2_v3_and_3d.txt",

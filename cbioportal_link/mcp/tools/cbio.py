@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, get_args
 
 from pydantic import AfterValidator, Field, StrictBool, StrictInt
 
+from cbioportal_link.api.client import FETCH_TIMES
 from cbioportal_link.mcp.annotations import READ_ONLY_OPEN_WORLD
-from cbioportal_link.mcp.envelope import McpErrorContext, ToolReturn, run_mcp_tool
+from cbioportal_link.mcp.envelope import McpErrorContext, ToolReturn, as_result, run_mcp_tool
 from cbioportal_link.mcp.next_commands import cmd
 from cbioportal_link.mcp.service_adapters import get_cbio_service
 from cbioportal_link.service import (
@@ -106,6 +107,18 @@ def _paged(payload: dict[str, Any], tool: str, args: dict[str, Any]) -> list[dic
     return []
 
 
+#: The service payload field each tool publishes as ``result`` (object) or ``results`` (array).
+_PRIMARY = {
+    "get_gene_alteration_frequency": "studies",
+    "search_studies": "studies",
+    "get_study": "study",
+    "get_gene_mutations": "variants",
+    "get_mutation_position_counts": "positions",
+    "list_cancer_types": "cancer_types",
+    "get_mutation_hotspots": "hotspots",
+}
+
+
 async def _run(
     tool: str,
     args: dict[str, Any],
@@ -113,9 +126,18 @@ async def _run(
     steps: Callable[[dict[str, Any]], list[dict[str, Any]]],
 ) -> ToolReturn:
     async def call() -> dict[str, Any]:
+        FETCH_TIMES.set([])
         payload = await fetch()
-        payload["_meta"] = {"next_commands": steps(payload)}
-        return payload
+        snapshot = tool == "get_mutation_hotspots"  # the bundled Cancer Hotspots tables
+        version = payload["data_version"] if snapshot else await get_cbio_service().data_version()
+        payload["_meta"] = {
+            "next_commands": steps(payload),
+            # Response-Envelope v1.2 provenance; the top-level copies are deprecated.
+            "source": "cancerhotspots" if snapshot else "cbioportal",
+            "data_version": version,
+            "retrieved_at": payload["retrieved_at"],
+        }
+        return as_result(payload, _PRIMARY[tool])
 
     return await run_mcp_tool(tool, call, context=McpErrorContext(tool, arguments=args))
 

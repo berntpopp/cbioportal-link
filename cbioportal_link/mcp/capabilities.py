@@ -65,8 +65,9 @@ def build_capabilities() -> dict[str, Any]:
             "cancer_type": "lowercase OncoTree code as cBioPortal uses it (luad, skcm, mel)",
             "protein_change": "protein change (V600E, G12C; p. prefix optional; p.Gly12Cys is converted)",
         },
-        "data_version": "cBioPortal portal + database version from /api/info and each "
-        "study's import_date; hotspots: " + hotspots.data_version(),
+        "data_version": "in `_meta` of every data result: cBioPortal portal + database "
+        "version from /api/info (each study row adds its import_date); hotspots: "
+        + hotspots.data_version(),
         "assembly": "each study's referenceGenome (most are GRCh37); hotspot residues follow "
         "the chosen build's transcript",
         "limits": {

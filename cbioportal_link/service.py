@@ -11,11 +11,10 @@ from __future__ import annotations
 import difflib
 import re
 from collections import Counter
-from datetime import UTC, datetime
 from typing import Any
 
 from cbioportal_link import hotspots
-from cbioportal_link.api.client import CbioClient
+from cbioportal_link.api.client import CbioClient, retrieved_at
 from cbioportal_link.exceptions import InvalidInputError, NotFoundError, UpstreamSchemaError
 from cbioportal_link.mcp import resources as res
 from cbioportal_link.mcp.next_commands import cmd
@@ -49,10 +48,6 @@ _SYMBOL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.\-]{0,29}$")
 GENE_FORMS = ["HGNC symbol (BRAF)", "NCBI Gene ID (673 or NCBIGene:673)"]
 
 
-def _now() -> str:
-    return datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
-
-
 class CbioService:
     """All cBioPortal queries; one instance per process over a shared client."""
 
@@ -60,13 +55,14 @@ class CbioService:
         """Bind the service to a sequential, rate-limited, cached upstream client."""
         self.client = client
 
-    async def _stamp(self, payload: dict[str, Any]) -> dict[str, Any]:
+    async def data_version(self) -> str:
+        """Portal and database version the live API reports (``/api/info``, cached)."""
         info = await self.client.info()
-        payload["data_version"] = (
-            f"cBioPortal {info.get('portalVersion')} (database {info.get('dbVersion')}); "
-            "per-study import_date on each row"
-        )
-        payload["retrieved_at"] = _now()
+        return f"cBioPortal {info.get('portalVersion')} (database {info.get('dbVersion')})"
+
+    async def _stamp(self, payload: dict[str, Any]) -> dict[str, Any]:
+        payload["data_version"] = f"{await self.data_version()}; per-study import_date on each row"
+        payload["retrieved_at"] = retrieved_at()
         return payload
 
     # -- lookups (each one cached request) ------------------------------------------------
@@ -495,5 +491,4 @@ class CbioService:
         payload = hotspots.answer(resolved["symbol"], residue, position, assembly_name, mode)
         if "resolved_from" in resolved:
             payload["resolved_from"] = resolved["resolved_from"]
-        payload["retrieved_at"] = _now()
         return payload
