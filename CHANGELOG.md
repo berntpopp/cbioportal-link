@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-11-26
+
+### Added
+
+- Paged tools (`search_studies`, `get_gene_mutations`, `list_cancer_types`) report
+  `_meta.pagination` with `total_count`, `has_more`, `next_cursor` (always `null`: paging is
+  by offset) and `next_offset` (Response-Envelope Standard v1 §5). The top-level `total`,
+  `truncated` and `next_offset` are unchanged.
+
 ## [0.3.0] - 2026-11-26
 
 ### Added
